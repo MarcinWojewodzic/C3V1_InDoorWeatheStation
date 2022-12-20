@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name PrototypV1_tx-rescue)(type Legacy)(uri ${KIPRJMOD}/PrototypV1_tx-rescue.lib)(options "")(descr ""))
+)

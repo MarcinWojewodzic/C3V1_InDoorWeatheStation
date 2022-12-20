@@ -1,0 +1,11 @@
+../Core/Src/e_papier.c:63:6:e_papier_reset	8	static
+../Core/Src/e_papier.c:72:6:e_papier_send_command	16	static
+../Core/Src/e_papier.c:79:6:e_papier_send_data	16	static
+../Core/Src/e_papier.c:86:6:e_papier_wait_until_idle	8	static
+../Core/Src/e_papier.c:93:6:e_papier_set_pixel	16	static
+../Core/Src/e_papier.c:108:6:e_papier_set_lut	16	static
+../Core/Src/e_papier.c:136:6:e_papier_clear2	24	static
+../Core/Src/e_papier.c:160:6:e_papier_turn_on_display	8	static
+../Core/Src/e_papier.c:165:6:e_papier_display	24	static
+../Core/Src/e_papier.c:186:6:e_papier_clear	8	static
+../Core/Src/e_papier.c:190:6:e_papier_init	16	static

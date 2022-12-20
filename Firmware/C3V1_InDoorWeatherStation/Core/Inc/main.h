@@ -59,8 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define PMS_RST_Pin GPIO_PIN_13
 #define PMS_RST_GPIO_Port GPIOC
-#define SSD1331_CS_Pin GPIO_PIN_4
-#define SSD1331_CS_GPIO_Port GPIOA
+#define SSD1306_CS_Pin GPIO_PIN_4
+#define SSD1306_CS_GPIO_Port GPIOA
 #define SCREENS_DC_Pin GPIO_PIN_0
 #define SCREENS_DC_GPIO_Port GPIOB
 #define EPAPIER_CS_Pin GPIO_PIN_1
@@ -69,10 +69,10 @@ void Error_Handler(void);
 #define EPAPIER_BUSY_GPIO_Port GPIOB
 #define EPAPIER_RST_Pin GPIO_PIN_10
 #define EPAPIER_RST_GPIO_Port GPIOB
-#define SSD1331_RST_Pin GPIO_PIN_11
-#define SSD1331_RST_GPIO_Port GPIOB
-#define SSD1331_RSTB12_Pin GPIO_PIN_12
-#define SSD1331_RSTB12_GPIO_Port GPIOB
+#define SSD1306_RST_Pin GPIO_PIN_11
+#define SSD1306_RST_GPIO_Port GPIOB
+#define HEARTBEAT_Pin GPIO_PIN_12
+#define HEARTBEAT_GPIO_Port GPIOB
 #define BME280_CS_Pin GPIO_PIN_13
 #define BME280_CS_GPIO_Port GPIOB
 #define ENCODER_SWITCH_Pin GPIO_PIN_14

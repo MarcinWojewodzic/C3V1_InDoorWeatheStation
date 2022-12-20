@@ -1,0 +1,17 @@
+../Core/Src/flash_spi.c:9:6:flash_CsLow	16	static
+../Core/Src/flash_spi.c:13:6:flash_CsHigh	16	static
+../Core/Src/flash_spi.c:17:6:flash_WriteCommand	24	static
+../Core/Src/flash_spi.c:21:6:flash_ReadCommand	24	static
+../Core/Src/flash_spi.c:25:6:flash_WriteData	24	static
+../Core/Src/flash_spi.c:29:6:flash_ReadData	24	static
+../Core/Src/flash_spi.c:33:9:flash_ReadSR1	24	static
+../Core/Src/flash_spi.c:42:9:flash_ReadSR2	24	static
+../Core/Src/flash_spi.c:51:6:flash_Reset	24	static
+../Core/Src/flash_spi.c:63:6:flash_SetWELBit	24	static
+../Core/Src/flash_spi.c:70:6:flash_ReadID	24	static
+../Core/Src/flash_spi.c:79:6:flash_WaitForEndProcess	16	static
+../Core/Src/flash_spi.c:83:6:flash_SetWELBit_and_WaitForEndProcess	16	static
+../Core/Src/flash_spi.c:90:6:flash_ReadDataBytes	32	static
+../Core/Src/flash_spi.c:106:6:flash_WritePage	32	static
+../Core/Src/flash_spi.c:121:6:flash_ClearSector	24	static
+../Core/Src/flash_spi.c:136:6:flash_Init	24	static

@@ -1,0 +1,15 @@
+BasedOnStyle: GNU
+ColumnLimit: '150'
+AlwaysBreakAfterReturnType: 'None'
+AlwaysBreakAfterDefinitionReturnType: 'None'
+IndentWidth: '3'
+TabWidth: '3'
+UseTab: Never
+AlignConsecutiveMacros: true
+BreakBeforeBraces: Allman 
+AllowShortFunctionsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+IndentCaseLabels : true
+SpaceBeforeParens: Never
+AlignConsecutiveAssignments: true
+AlignConsecutiveBitFields: true  

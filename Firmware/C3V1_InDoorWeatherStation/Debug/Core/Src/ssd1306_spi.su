@@ -1,0 +1,6 @@
+../Core/Src/ssd1306_spi.c:12:13:ssd1306_command	16	static
+../Core/Src/ssd1306_spi.c:19:13:ssd1306_data	16	static
+../Core/Src/ssd1306_spi.c:26:6:ssd1306_set_pixel	16	static
+../Core/Src/ssd1306_spi.c:45:6:ssd1306_display	8	static
+../Core/Src/ssd1306_spi.c:55:6:ssd1306_clear	8	static
+../Core/Src/ssd1306_spi.c:59:6:ssd1306_init	16	static
