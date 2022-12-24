@@ -21,6 +21,7 @@
 #include "cmsis_os.h"
 #include "dma.h"
 #include "gpio.h"
+#include "iwdg.h"
 #include "rng.h"
 #include "rtc.h"
 #include "spi.h"
@@ -101,6 +102,7 @@ int main(void)
    MX_SPI3_Init();
    MX_TIM2_Init();
    MX_TIM5_Init();
+   MX_IWDG_Init();
 
    /* Initialize interrupts */
    MX_NVIC_Init();
@@ -118,6 +120,7 @@ int main(void)
    /* We should never get here as control is now taken by the scheduler */
    /* Infinite loop */
    /* USER CODE BEGIN WHILE */
+   HAL_NVIC_SystemReset();
    while(1)
    {
       /* USER CODE END WHILE */
@@ -151,9 +154,10 @@ void SystemClock_Config(void)
    /** Initializes the RCC Oscillators according to the specified parameters
     * in the RCC_OscInitTypeDef structure.
     */
-   RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_LSE | RCC_OSCILLATORTYPE_MSI;
+   RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_LSE | RCC_OSCILLATORTYPE_MSI;
    RCC_OscInitStruct.LSEState            = RCC_LSE_ON;
    RCC_OscInitStruct.HSI48State          = RCC_HSI48_ON;
+   RCC_OscInitStruct.LSIState            = RCC_LSI_ON;
    RCC_OscInitStruct.MSIState            = RCC_MSI_ON;
    RCC_OscInitStruct.MSICalibrationValue = 0;
    RCC_OscInitStruct.MSIClockRange       = RCC_MSIRANGE_6;

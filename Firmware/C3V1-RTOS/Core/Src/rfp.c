@@ -11,6 +11,8 @@
 #include "crc.h"
 #include "main.h"
 #include "stdio.h"
+
+#include "cmsis_os.h"
 uint8_t RfpDataRecive[100]   = { 0 };
 uint8_t RfpDataTransmit[100] = { 0 };
 static RFP_TypeDef *Rfp;
@@ -113,7 +115,7 @@ void RFP_SendData(RFPDeviceID_TypeDef Destination, RFPMessageType_TypeDef Type, 
 }
 static void RFP_SendResponseFunction(RFPMessageType_TypeDef Response)
 {
-   HAL_Delay(200);
+   osDelay(200);
    RfpDataTransmit[0] = Rfp->SourceMessage;
    RfpDataTransmit[1] = Rfp->DeviceType;
    RfpDataTransmit[2] = RFP_MESSAGE;
@@ -223,7 +225,7 @@ static void RFP_SendFunction(void)
 {
    if(Rfp->Cnt < 5)
    {
-      HAL_Delay(200);
+      osDelay(200);
       HC12_TransmitData(RfpDataTransmit, Rfp->DataSizeTransmit);
       Rfp->Cnt++;
       Rfp->NewEvent = RFP_EVENT_WAIT_FOR_RESPONSE;

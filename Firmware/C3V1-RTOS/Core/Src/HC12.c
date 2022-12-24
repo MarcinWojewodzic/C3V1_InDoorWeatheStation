@@ -5,6 +5,7 @@
  *      Author: M
  */
 #include "HC12.h"
+#include "cmsis_os.h"
 #include "main.h"
 #include "rfp.h"
 #include "usart.h"
@@ -30,7 +31,9 @@ void HC12_ExitCommandMode(void)
 }
 void HC12_TransmitData(uint8_t *Data, uint32_t Length)
 {
+   taskENTER_CRITICAL();
    HAL_UART_Transmit(&huart1, Data, Length, 1000);
+   taskEXIT_CRITICAL();
 }
 void HC12_ReciveToIdleDMA(uint8_t *Data, uint32_t Length)
 {

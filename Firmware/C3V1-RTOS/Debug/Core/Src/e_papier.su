@@ -7,5 +7,5 @@
 ../Core/Src/e_papier.c:119:6:e_papier_clear2	24	static
 ../Core/Src/e_papier.c:143:6:e_papier_turn_on_display	8	static
 ../Core/Src/e_papier.c:148:6:e_papier_display	24	static
-../Core/Src/e_papier.c:173:6:e_papier_clear	8	static
-../Core/Src/e_papier.c:177:6:e_papier_init	16	static
+../Core/Src/e_papier.c:174:6:e_papier_clear	8	static
+../Core/Src/e_papier.c:178:6:e_papier_init	16	static

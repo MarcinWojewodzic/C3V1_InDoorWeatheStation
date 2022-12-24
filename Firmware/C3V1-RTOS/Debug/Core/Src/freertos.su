@@ -1,4 +1,11 @@
-../Core/Src/freertos.c:115:6:MX_FREERTOS_Init	8	static
-../Core/Src/freertos.c:172:6:StartDefaultTask	16	static
-../Core/Src/freertos.c:190:6:StartInitAndTimeTask	152	static
-../Core/Src/freertos.c:232:6:StartRfpTask	16	static
+../Core/Src/freertos.c:172:6:MX_FREERTOS_Init	8	static
+../Core/Src/freertos.c:257:6:StartDefaultTask	16	static
+../Core/Src/freertos.c:277:6:StartInitAndTimeTask	152	static
+../Core/Src/freertos.c:324:6:StartRfpTask	16	static
+../Core/Src/freertos.c:347:6:StartMeasurmentTask	24	static
+../Core/Src/freertos.c:370:6:StartInternalMeasurmentTask	64	static
+../Core/Src/freertos.c:399:6:StartMoonPhaseTask	16	static
+../Core/Src/freertos.c:418:6:StartE_PapierDrawingTask	200	static
+../Core/Src/freertos.c:488:6:StartE_PapierDisplayTask	16	static
+../Core/Src/freertos.c:511:13:RFP_DataFunction	80	static
+../Core/Src/freertos.c:547:6:HAL_UARTEx_RxEventCallback	16	static

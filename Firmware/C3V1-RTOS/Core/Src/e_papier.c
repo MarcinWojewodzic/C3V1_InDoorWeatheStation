@@ -14,7 +14,7 @@
 
 #include "cmsis_os.h"
 SPI_HandleTypeDef *e_papier_spi;
-static uint8_t buffer[EPD_WIDTH * EPD_HEIGHT / 8];
+static uint8_t BufferEpapier[EPD_WIDTH * EPD_HEIGHT / 8];
 
 const unsigned char lut_vcom0[] = {
    0x00, 0x17, 0x00, 0x00, 0x00, 0x02, 0x00, 0x17, 0x17, 0x00, 0x00, 0x02, 0x00, 0x0A, 0x01, 0x00, 0x00, 0x01, 0x00, 0x0E, 0x0E, 0x00,
@@ -76,11 +76,11 @@ void e_papier_set_pixel(uint16_t x, uint16_t y, color_t color)
    }
    if(color == WHITE)
    {
-      buffer[x / 8 + y * EPD_WIDTH / 8] |= (0x80 > (x % 8));
+      BufferEpapier[x / 8 + y * EPD_WIDTH / 8] |= (0x80 > (x % 8));
    }
    else
    {
-      buffer[x / 8 + y * EPD_WIDTH / 8] &= ~(0x80 >> (x % 8));
+      BufferEpapier[x / 8 + y * EPD_WIDTH / 8] &= ~(0x80 >> (x % 8));
    }
 }
 void e_papier_set_lut(void)
@@ -150,7 +150,7 @@ void e_papier_display(void)
    uint16_t Width, Height;
    Width  = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
    Height = EPD_HEIGHT;
-
+   taskENTER_CRITICAL();
    e_papier_send_command(DATA_START_TRANSMISSION_1);
    for(uint16_t j = 0; j < Height; j++)
    {
@@ -164,15 +164,16 @@ void e_papier_display(void)
    {
       for(uint16_t i = 0; i < Width; i++)
       {
-         e_papier_send_data(buffer[i + j * Width]);
+         e_papier_send_data(BufferEpapier[i + j * Width]);
       }
    }
+   taskEXIT_CRITICAL();
    e_papier_turn_on_display();
    e_papier_wait_until_idle();
 }
 void e_papier_clear()
 {
-   memset(buffer, 0xff, EPD_HEIGHT * EPD_WIDTH / 8);
+   memset(BufferEpapier, 0xff, EPD_HEIGHT * EPD_WIDTH / 8);
 }
 void e_papier_init(SPI_HandleTypeDef *spi)
 {

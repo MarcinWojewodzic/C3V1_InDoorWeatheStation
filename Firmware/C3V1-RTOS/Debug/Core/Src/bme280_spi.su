@@ -1,0 +1,12 @@
+../Core/Src/bme280_spi.c:11:6:BME280_CsLow	16	static
+../Core/Src/bme280_spi.c:15:6:BME280_CsHigh	16	static
+../Core/Src/bme280_spi.c:19:9:BME280_Read8	24	static
+../Core/Src/bme280_spi.c:29:6:BME280_Write8	24	static
+../Core/Src/bme280_spi.c:39:17:BME280_Read16LE	24	static
+../Core/Src/bme280_spi.c:46:17:BME280_Read16	24	static
+../Core/Src/bme280_spi.c:53:10:BME280_Read24	24	static
+../Core/Src/bme280_spi.c:63:14:BME280_Read_temp	32	static
+../Core/Src/bme280_spi.c:83:14:BME280_Read_hum	32	static
+../Core/Src/bme280_spi.c:107:14:BME280_Read_press	336	static
+../Core/Src/bme280_spi.c:135:6:BME280_ReadAll	24	static
+../Core/Src/bme280_spi.c:141:6:BME280_Init	32	static
