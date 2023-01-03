@@ -1,0 +1,7 @@
+../Core/Src/Menu.c:36:13:MENU_ChangeState	16	static
+../Core/Src/Menu.c:49:6:MENU_Init	8	static
+../Core/Src/Menu.c:53:6:MENU_Handler	8	static
+../Core/Src/Menu.c:61:13:MENU_IdleFunction	8	static
+../Core/Src/Menu.c:73:13:MENU_ChoiseFunction	120	static
+../Core/Src/Menu.c:137:13:MENU_RunningFunction	144	static
+../Core/Src/Menu.c:272:13:MENU_EndFunction	8	static

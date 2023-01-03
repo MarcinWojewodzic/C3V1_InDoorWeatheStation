@@ -1,5 +1,6 @@
 "./Core/Src/GFX_BW.o"
 "./Core/Src/HC12.o"
+"./Core/Src/Menu.o"
 "./Core/Src/bme280_spi.o"
 "./Core/Src/crc.o"
 "./Core/Src/dma.o"

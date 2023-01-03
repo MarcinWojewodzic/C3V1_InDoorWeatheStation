@@ -48,9 +48,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../Core/Inc/dma.h ../Core/Inc/main.h ../Core/Inc/gpio.h \
- ../Core/Inc/iwdg.h ../Core/Inc/rng.h ../Core/Inc/rtc.h ../Core/Inc/spi.h \
- ../Core/Inc/tim.h ../Core/Inc/usart.h
+ ../Core/Inc/dma.h ../Core/Inc/main.h ../Core/Inc/iwdg.h \
+ ../Core/Inc/rng.h ../Core/Inc/rtc.h ../Core/Inc/spi.h ../Core/Inc/tim.h \
+ ../Core/Inc/usart.h ../Core/Inc/gpio.h
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -103,10 +103,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/dma.h:
 ../Core/Inc/main.h:
-../Core/Inc/gpio.h:
 ../Core/Inc/iwdg.h:
 ../Core/Inc/rng.h:
 ../Core/Inc/rtc.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/tim.h:
 ../Core/Inc/usart.h:
+../Core/Inc/gpio.h:

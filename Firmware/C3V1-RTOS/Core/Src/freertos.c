@@ -25,6 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "math.h"
 #include "printf.h"
 
 #include "GFX_BW.h"
@@ -48,6 +49,7 @@
 
 #include "FlagsDefinition.h"
 #include "MeasurmentVariable.h"
+#include "Menu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -126,9 +128,22 @@ const osThreadAttr_t E_PapierDisplayTask_attributes = {
    .stack_size = 256 * 4,
    .priority   = (osPriority_t)osPriorityHigh,
 };
+/* Definitions for MenuTask */
+osThreadId_t MenuTaskHandle;
+const osThreadAttr_t MenuTask_attributes = {
+   .name       = "MenuTask",
+   .stack_size = 1024 * 4,
+   .priority   = (osPriority_t)osPriorityLow,
+};
 /* Definitions for MeasurmentQueue */
 osMessageQueueId_t MeasurmentQueueHandle;
 const osMessageQueueAttr_t MeasurmentQueue_attributes = { .name = "MeasurmentQueue" };
+/* Definitions for MoonPhaseQueue */
+osMessageQueueId_t MoonPhaseQueueHandle;
+const osMessageQueueAttr_t MoonPhaseQueue_attributes = { .name = "MoonPhaseQueue" };
+/* Definitions for MenuTimer */
+osTimerId_t MenuTimerHandle;
+const osTimerAttr_t MenuTimer_attributes = { .name = "MenuTimer" };
 /* Definitions for ScreensDcMutex */
 osMutexId_t ScreensDcMutexHandle;
 const osMutexAttr_t ScreensDcMutex_attributes = { .name = "ScreensDcMutex" };
@@ -144,6 +159,9 @@ const osMutexAttr_t E_PAPIERMutex_attributes = { .name = "E_PAPIERMutex" };
 /* Definitions for BME280Mutex */
 osMutexId_t BME280MutexHandle;
 const osMutexAttr_t BME280Mutex_attributes = { .name = "BME280Mutex" };
+/* Definitions for MenuMutex */
+osMutexId_t MenuMutexHandle;
+const osMutexAttr_t MenuMutex_attributes = { .name = "MenuMutex" };
 /* Definitions for C3V1Flags */
 osEventFlagsId_t C3V1FlagsHandle;
 const osEventFlagsAttr_t C3V1Flags_attributes = { .name = "C3V1Flags" };
@@ -151,6 +169,8 @@ const osEventFlagsAttr_t C3V1Flags_attributes = { .name = "C3V1Flags" };
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 static void RFP_DataFunction(uint8_t *Data, uint32_t DataLength, uint32_t DataStart);
+static double faza(double Rok, double Miesiac, double Dzien, double godzina, double min, double sec);
+static double rang(double x);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -161,6 +181,8 @@ void StartInternalMeasurmentTask(void *argument);
 void StartMoonPhaseTask(void *argument);
 void StartE_PapierDrawingTask(void *argument);
 void StartE_PapierDisplayTask(void *argument);
+void StartMenuTask(void *argument);
+void MenuTimerCallback(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -190,6 +212,9 @@ void MX_FREERTOS_Init(void)
    /* creation of BME280Mutex */
    BME280MutexHandle = osMutexNew(&BME280Mutex_attributes);
 
+   /* creation of MenuMutex */
+   MenuMutexHandle = osMutexNew(&MenuMutex_attributes);
+
    /* USER CODE BEGIN RTOS_MUTEX */
    /* add mutexes, ... */
    /* USER CODE END RTOS_MUTEX */
@@ -198,6 +223,10 @@ void MX_FREERTOS_Init(void)
    /* add semaphores, ... */
    /* USER CODE END RTOS_SEMAPHORES */
 
+   /* Create the timer(s) */
+   /* creation of MenuTimer */
+   MenuTimerHandle = osTimerNew(MenuTimerCallback, osTimerOnce, NULL, &MenuTimer_attributes);
+
    /* USER CODE BEGIN RTOS_TIMERS */
    /* start timers, add new ones, ... */
    /* USER CODE END RTOS_TIMERS */
@@ -205,6 +234,9 @@ void MX_FREERTOS_Init(void)
    /* Create the queue(s) */
    /* creation of MeasurmentQueue */
    MeasurmentQueueHandle = osMessageQueueNew(16, sizeof(MV_TypeDef), &MeasurmentQueue_attributes);
+
+   /* creation of MoonPhaseQueue */
+   MoonPhaseQueueHandle = osMessageQueueNew(16, sizeof(double), &MoonPhaseQueue_attributes);
 
    /* USER CODE BEGIN RTOS_QUEUES */
    /* add queues, ... */
@@ -234,6 +266,9 @@ void MX_FREERTOS_Init(void)
 
    /* creation of E_PapierDisplayTask */
    E_PapierDisplayTaskHandle = osThreadNew(StartE_PapierDisplayTask, NULL, &E_PapierDisplayTask_attributes);
+
+   /* creation of MenuTask */
+   MenuTaskHandle = osThreadNew(StartMenuTask, NULL, &MenuTask_attributes);
 
    /* USER CODE BEGIN RTOS_THREADS */
    /* add threads, ... */
@@ -283,15 +318,18 @@ void StartInitAndTimeTask(void *argument)
    BME280_Init(&Bme, &hspi1, BME280_CS_GPIO_Port, BME280_CS_Pin);
    GFX_SetFont(font_8x5);
    RFP_RegisterDataFunction(RFP_DataFunction);
+   MENU_Init();
    osEventFlagsSet(C3V1FlagsHandle, INITIALIZE_ALL_FLAG);
    uint32_t Random;
    RTC_TimeTypeDef RtcTime;
    RTC_DateTypeDef RtcDate;
+   RTC_DateTypeDef ActualRtcDate = { 0 };
    char data[100];
    /* Infinite loop */
    for(;;)
    {
       osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
+      osMutexAcquire(MenuMutexHandle, osWaitForever);
       osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
       osMutexAcquire(SSD1306MutexHandle, osWaitForever);
       osMutexAcquire(SPI1MutexHandle, osWaitForever);
@@ -301,7 +339,7 @@ void StartInitAndTimeTask(void *argument)
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
       sprintf(data, "%d h %d m %d s", RtcTime.Hours, RtcTime.Minutes, RtcTime.Seconds);
       GFX_DrawString(0, 0, data, WHITE, 0, OLED);
-      sprintf(data, "%d : %d ; 2022", RtcDate.Date, RtcDate.Month);
+      sprintf(data, "%d : %d ; 20%d", RtcDate.Date, RtcDate.Month, RtcDate.Year);
       GFX_DrawString(0, 10, data, WHITE, 0, OLED);
       sprintf(data, "RNG %d ", Random);
       GFX_DrawString(0, 20, data, WHITE, 0, OLED);
@@ -309,6 +347,12 @@ void StartInitAndTimeTask(void *argument)
       osMutexRelease(SPI1MutexHandle);
       osMutexRelease(SSD1306MutexHandle);
       osMutexRelease(ScreensDcMutexHandle);
+      osMutexRelease(MenuMutexHandle);
+      if(ActualRtcDate.Date != RtcDate.Date)
+      {
+         ActualRtcDate.Date = RtcDate.Date;
+         osEventFlagsSet(C3V1FlagsHandle, MOON_PHASE_FLAG);
+      }
       osDelay(1000);
    }
    /* USER CODE END StartInitAndTimeTask */
@@ -403,6 +447,27 @@ void StartMoonPhaseTask(void *argument)
    /* Infinite loop */
    for(;;)
    {
+      osEventFlagsWait(C3V1FlagsHandle, MOON_PHASE_FLAG, osFlagsWaitAny, osWaitForever);
+      RTC_TimeTypeDef RtcTime;
+      RTC_DateTypeDef RtcDate;
+      double PhaseMoon = 0.0;
+      uint32_t Cnt     = 0;
+      HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      for(int Hours = 0; Hours < 24; Hours++)
+      {
+         for(int Minutes = 0; Minutes < 60; Minutes++)
+         {
+            for(int Seconds = 0; Seconds < 60; Seconds++)
+            {
+               PhaseMoon += faza((RtcDate.Year + 2000.0), RtcDate.Month, RtcDate.Date, Hours, Minutes, 0);
+               Cnt++;
+               osDelay(5);
+            }
+         }
+      }
+      PhaseMoon /= (Cnt);
+      osMessageQueuePut(MoonPhaseQueueHandle, &PhaseMoon, 0, osWaitForever);
       osDelay(1);
    }
    /* USER CODE END StartMoonPhaseTask */
@@ -421,7 +486,8 @@ void StartE_PapierDrawingTask(void *argument)
    osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
    RTC_TimeTypeDef RtcTime;
    RTC_DateTypeDef RtcDate;
-   MV_TypeDef _Mv = { 0 };
+   MV_TypeDef _Mv    = { 0 };
+   double _MoonPhase = 0;
    /* Infinite loop */
    for(;;)
    {
@@ -470,6 +536,9 @@ void StartE_PapierDrawingTask(void *argument)
       GFX_DrawString(0, 200, mes, BLACK, 1, E_PAPIER);
       sprintf(mes, "%Pressure: %0.2f", _Mv.Pressure);
       GFX_DrawString(0, 220, mes, BLACK, 1, E_PAPIER);
+      osMessageQueueGet(MoonPhaseQueueHandle, &_MoonPhase, 0, 0);
+      sprintf(mes, "Moon Phase: %0.2f%%", _MoonPhase);
+      GFX_DrawString(0, 230, mes, BLACK, 1, E_PAPIER);
       taskEXIT_CRITICAL();
       osMutexRelease(E_PAPIERMutexHandle);
       osEventFlagsSet(C3V1FlagsHandle, E_PAPIER_DISPLAY_FLAG);
@@ -504,6 +573,34 @@ void StartE_PapierDisplayTask(void *argument)
       osDelay(1);
    }
    /* USER CODE END StartE_PapierDisplayTask */
+}
+
+/* USER CODE BEGIN Header_StartMenuTask */
+/**
+ * @brief Function implementing the MenuTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartMenuTask */
+void StartMenuTask(void *argument)
+{
+   /* USER CODE BEGIN StartMenuTask */
+   osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
+   /* Infinite loop */
+   for(;;)
+   {
+      MENU_Handler();
+      osDelay(10);
+   }
+   /* USER CODE END StartMenuTask */
+}
+
+/* MenuTimerCallback function */
+void MenuTimerCallback(void *argument)
+{
+   /* USER CODE BEGIN MenuTimerCallback */
+
+   /* USER CODE END MenuTimerCallback */
 }
 
 /* Private application code --------------------------------------------------*/
@@ -543,6 +640,54 @@ static void RFP_DataFunction(uint8_t *Data, uint32_t DataLength, uint32_t DataSt
    Mv.ExtPM10      = (Data[25 + 3] | (Data[24 + 3] << 8));
    Mv.BatteryState = Data[DataStart + 18];
    osMessageQueuePut(MeasurmentQueueHandle, &Mv, 0, osWaitForever);
+}
+static double rang(double x)
+{
+   double A, b;
+   b = x / 360;
+   A = 360 * (b - (int)b);
+   if(A < 0)
+      A = A + 360;
+   return A;
+}
+static double faza(double Rok, double Miesiac, double Dzien, double godzina, double min, double sec)
+{
+   if(Miesiac > 2)
+   {
+      Miesiac = Miesiac;
+      Rok     = Rok;
+   }
+   if(Miesiac <= 2)
+   {
+      Miesiac = Miesiac + 12;
+      Rok     = Rok - 1;
+   }
+   double A, b, phi1, phi2, jdp, tzd, elm, ams, aml, asd;
+   A   = (int)(Rok / 100);
+   b   = 2 - A + (int)(A / 4);
+   jdp = (int)(365.25 * (Rok + 4716)) + (int)(30.6001 * (Miesiac + 1)) + Dzien + b + ((godzina + min / 60 + sec / 3600) / 24) - 1524.5;
+   jdp = jdp;
+   tzd = (jdp - 2451545) / 36525;
+   elm = rang(297.8502042 + 445267.1115168 * tzd - (0.00163 * tzd * tzd) + tzd * tzd * tzd / 545868 - tzd * tzd * tzd * tzd / 113065000);
+   ams = rang(357.5291092 + 35999.0502909 * tzd - 0.0001536 * tzd * tzd + tzd * tzd * tzd / 24490000);
+   aml = rang(134.9634114 + 477198.8676313 * tzd - 0.008997 * tzd * tzd + tzd * tzd * tzd / 69699 - tzd * tzd * tzd * tzd / 14712000);
+   asd = 180 - elm - (6.289 * sin((M_PI / 180) * ((aml)))) + (2.1 * sin((M_PI / 180) * ((ams)))) - (1.274 * sin((M_PI / 180) * (((2 * elm) - aml))))
+         - (0.658 * sin((M_PI / 180) * ((2 * elm)))) - (0.214 * sin((M_PI / 180) * ((2 * aml)))) - (0.11 * sin((M_PI / 180) * ((elm))));
+   phi1 = (1 + cos((M_PI / 180) * (asd))) / 2;
+
+   tzd = (jdp + (0.5 / 24) - 2451545) / 36525;
+   elm = rang(297.8502042 + 445267.1115168 * tzd - (0.00163 * tzd * tzd) + tzd * tzd * tzd / 545868 - tzd * tzd * tzd * tzd / 113065000);
+   ams = rang(357.5291092 + 35999.0502909 * tzd - 0.0001536 * tzd * tzd + tzd * tzd * tzd / 24490000);
+   aml = rang(134.9634114 + 477198.8676313 * tzd - 0.008997 * tzd * tzd + tzd * tzd * tzd / 69699 - tzd * tzd * tzd * tzd / 14712000);
+   asd = 180 - elm - (6.289 * sin((M_PI / 180) * ((aml)))) + (2.1 * sin((M_PI / 180) * ((ams)))) - (1.274 * sin((M_PI / 180) * (((2 * elm) - aml))))
+         - (0.658 * sin((M_PI / 180) * ((2 * elm)))) - (0.214 * sin((M_PI / 180) * ((2 * aml)))) - (0.11 * sin((M_PI / 180) * ((elm))));
+   phi2 = (1 + cos((M_PI / 180) * (asd))) / 2;
+
+   if((phi2 - phi1) < 0)
+   {
+      phi1 = -1 * phi1;
+   }
+   return (100 * phi1);
 }
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
