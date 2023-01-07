@@ -55,8 +55,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Core/Inc/gpio.h ../Core/Inc/iwdg.h ../Core/Inc/rng.h \
  ../Core/Inc/rtc.h ../Core/Inc/spi.h ../Core/Inc/tim.h \
  ../Core/Inc/usart.h ../Core/Inc/bme280_spi.h \
- ../Core/Inc/FlagsDefinition.h ../Core/Inc/MeasurmentVariable.h \
- ../Core/Inc/Menu.h
+ ../Core/Inc/FlagsDefinition.h ../Core/Inc/FramOrganization.h \
+ ../Core/Inc/MeasurmentVariable.h ../Core/Inc/Menu.h ../Core/Inc/crc.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -127,5 +127,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Core/Inc/usart.h:
 ../Core/Inc/bme280_spi.h:
 ../Core/Inc/FlagsDefinition.h:
+../Core/Inc/FramOrganization.h:
 ../Core/Inc/MeasurmentVariable.h:
 ../Core/Inc/Menu.h:
+../Core/Inc/crc.h:

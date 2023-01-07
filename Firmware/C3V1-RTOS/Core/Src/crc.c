@@ -16,7 +16,7 @@ uint32_t Crc(uint32_t PreviuseCRC, uint32_t DataLength, uint8_t *data)
       uint32_t temp = data[i];
       if(temp == 0x00000000 )
       {
-         temp = RandomNumber[k % (sizeof(RandomNumber)-1)];
+         temp = RandomNumber[k % 12];
          k++;
       }
       PreviuseCRC ^= ((uint32_t)(temp) * (256 * i));

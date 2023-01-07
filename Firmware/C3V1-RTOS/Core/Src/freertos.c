@@ -48,8 +48,12 @@
 #include "bme280_spi.h"
 
 #include "FlagsDefinition.h"
+#include "FramOrganization.h"
 #include "MeasurmentVariable.h"
 #include "Menu.h"
+#include "crc.h"
+#include "flash_spi.h"
+#include "fram.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +75,8 @@
 /* USER CODE BEGIN Variables */
 RFP_TypeDef Rfp = { 0 };
 BME280_t Bme    = { 0 };
+flash_t Flash   = { 0 };
+fram_t Fram;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -135,12 +141,32 @@ const osThreadAttr_t MenuTask_attributes = {
    .stack_size = 1024 * 4,
    .priority   = (osPriority_t)osPriorityLow,
 };
+/* Definitions for SaveMemoryTask */
+osThreadId_t SaveMemoryTaskHandle;
+const osThreadAttr_t SaveMemoryTask_attributes = {
+   .name       = "SaveMemoryTask",
+   .stack_size = 2048 * 4,
+   .priority   = (osPriority_t)osPriorityNormal,
+};
+/* Definitions for ChartTask */
+osThreadId_t ChartTaskHandle;
+const osThreadAttr_t ChartTask_attributes = {
+   .name       = "ChartTask",
+   .stack_size = 4048 * 4,
+   .priority   = (osPriority_t)osPriorityLow,
+};
 /* Definitions for MeasurmentQueue */
 osMessageQueueId_t MeasurmentQueueHandle;
 const osMessageQueueAttr_t MeasurmentQueue_attributes = { .name = "MeasurmentQueue" };
 /* Definitions for MoonPhaseQueue */
 osMessageQueueId_t MoonPhaseQueueHandle;
 const osMessageQueueAttr_t MoonPhaseQueue_attributes = { .name = "MoonPhaseQueue" };
+/* Definitions for ChartQueue */
+osMessageQueueId_t ChartQueueHandle;
+const osMessageQueueAttr_t ChartQueue_attributes = { .name = "ChartQueue" };
+/* Definitions for DataToSaveQueue */
+osMessageQueueId_t DataToSaveQueueHandle;
+const osMessageQueueAttr_t DataToSaveQueue_attributes = { .name = "DataToSaveQueue" };
 /* Definitions for MenuTimer */
 osTimerId_t MenuTimerHandle;
 const osTimerAttr_t MenuTimer_attributes = { .name = "MenuTimer" };
@@ -171,6 +197,7 @@ const osEventFlagsAttr_t C3V1Flags_attributes = { .name = "C3V1Flags" };
 static void RFP_DataFunction(uint8_t *Data, uint32_t DataLength, uint32_t DataStart);
 static double faza(double Rok, double Miesiac, double Dzien, double godzina, double min, double sec);
 static double rang(double x);
+static void Memory_ClearBuffer(PageVariable_TypeDef *Pv);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -182,6 +209,8 @@ void StartMoonPhaseTask(void *argument);
 void StartE_PapierDrawingTask(void *argument);
 void StartE_PapierDisplayTask(void *argument);
 void StartMenuTask(void *argument);
+void StartSaveMemoryTask(void *argument);
+void StartChartTask(void *argument);
 void MenuTimerCallback(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -238,6 +267,12 @@ void MX_FREERTOS_Init(void)
    /* creation of MoonPhaseQueue */
    MoonPhaseQueueHandle = osMessageQueueNew(16, sizeof(double), &MoonPhaseQueue_attributes);
 
+   /* creation of ChartQueue */
+   ChartQueueHandle = osMessageQueueNew(16, sizeof(ChartType_TypeDef), &ChartQueue_attributes);
+
+   /* creation of DataToSaveQueue */
+   DataToSaveQueueHandle = osMessageQueueNew(16, sizeof(MV_TypeDef), &DataToSaveQueue_attributes);
+
    /* USER CODE BEGIN RTOS_QUEUES */
    /* add queues, ... */
    /* USER CODE END RTOS_QUEUES */
@@ -269,6 +304,12 @@ void MX_FREERTOS_Init(void)
 
    /* creation of MenuTask */
    MenuTaskHandle = osThreadNew(StartMenuTask, NULL, &MenuTask_attributes);
+
+   /* creation of SaveMemoryTask */
+   SaveMemoryTaskHandle = osThreadNew(StartSaveMemoryTask, NULL, &SaveMemoryTask_attributes);
+
+   /* creation of ChartTask */
+   ChartTaskHandle = osThreadNew(StartChartTask, NULL, &ChartTask_attributes);
 
    /* USER CODE BEGIN RTOS_THREADS */
    /* add threads, ... */
@@ -312,6 +353,7 @@ void StartDefaultTask(void *argument)
 void StartInitAndTimeTask(void *argument)
 {
    /* USER CODE BEGIN StartInitAndTimeTask */
+   taskENTER_CRITICAL();
    RFP_Init(&Rfp, RFP_IDWS);
    e_papier_init(&hspi1);
    ssd1306_init(&hspi1);
@@ -319,6 +361,10 @@ void StartInitAndTimeTask(void *argument)
    GFX_SetFont(font_8x5);
    RFP_RegisterDataFunction(RFP_DataFunction);
    MENU_Init();
+   fram_Init(&Fram, &hspi1, FRAM_HOLD_GPIO_Port, FRAM_CS_GPIO_Port, FRAM_WP_GPIO_Port, FRAM_HOLD_Pin, FRAM_CS_Pin, FRAM_WP_Pin);
+   flash_Init(&Flash, &hspi1, FLASH_CS_GPIO_Port, FLASH_CS_Pin);
+   // fram_Write32(&Fram, DATE_CHART_CNT_ADDR, 0);
+   taskEXIT_CRITICAL();
    osEventFlagsSet(C3V1FlagsHandle, INITIALIZE_ALL_FLAG);
    uint32_t Random;
    RTC_TimeTypeDef RtcTime;
@@ -352,6 +398,7 @@ void StartInitAndTimeTask(void *argument)
       {
          ActualRtcDate.Date = RtcDate.Date;
          osEventFlagsSet(C3V1FlagsHandle, MOON_PHASE_FLAG);
+         osEventFlagsSet(C3V1FlagsHandle, NEW_DAY_TO_SAVE);
       }
       osDelay(1000);
    }
@@ -427,6 +474,7 @@ void StartInternalMeasurmentTask(void *argument)
       osMutexRelease(SPI1MutexHandle);
       osEventFlagsSet(C3V1FlagsHandle, SEND_MEASURMENT_COMMAND_FLAG);
       osMessageQueuePut(MeasurmentQueueHandle, &_Mv, 0, osWaitForever);
+      osMessageQueuePut(DataToSaveQueueHandle, &_Mv, 0, osWaitForever);
       osEventFlagsSet(C3V1FlagsHandle, E_PAPIER_DRAWING_FLAG);
       osDelay(1);
    }
@@ -460,7 +508,7 @@ void StartMoonPhaseTask(void *argument)
          {
             for(int Seconds = 0; Seconds < 60; Seconds++)
             {
-               PhaseMoon += faza((RtcDate.Year + 2000.0), RtcDate.Month, RtcDate.Date, Hours, Minutes, 0);
+               PhaseMoon += faza((RtcDate.Year + 2000), RtcDate.Month, RtcDate.Date, Hours, Minutes, Seconds);
                Cnt++;
                osDelay(5);
             }
@@ -494,7 +542,6 @@ void StartE_PapierDrawingTask(void *argument)
       osEventFlagsWait(C3V1FlagsHandle, E_PAPIER_DRAWING_FLAG, osFlagsWaitAny, osWaitForever);
       osMessageQueueGet(MeasurmentQueueHandle, &_Mv, 0, osWaitForever);
       osMutexAcquire(E_PAPIERMutexHandle, osWaitForever);
-      taskENTER_CRITICAL();
       char mes[100];
       sprintf(mes, "H %0.2f", _Mv.ExtHumidity);
       GFX_DrawString(0, 0, mes, BLACK, 1, E_PAPIER);
@@ -528,7 +575,7 @@ void StartE_PapierDrawingTask(void *argument)
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
       sprintf(mes, "%d h %d m %d s", RtcTime.Hours, RtcTime.Minutes, RtcTime.Seconds);
       GFX_DrawString(0, 80, mes, BLACK, 1, E_PAPIER);
-      sprintf(mes, "%d : %d ; 2022", RtcDate.Date, RtcDate.Month);
+      sprintf(mes, "%d : %d ; 20%d", RtcDate.Date, RtcDate.Month, RtcDate.Year);
       GFX_DrawString(0, 90, mes, BLACK, 1, E_PAPIER);
       sprintf(mes, "%Internal Temperature: %0.2f", _Mv.InternalTemperature);
       GFX_DrawString(0, 210, mes, BLACK, 1, E_PAPIER);
@@ -539,7 +586,6 @@ void StartE_PapierDrawingTask(void *argument)
       osMessageQueueGet(MoonPhaseQueueHandle, &_MoonPhase, 0, 0);
       sprintf(mes, "Moon Phase: %0.2f%%", _MoonPhase);
       GFX_DrawString(0, 230, mes, BLACK, 1, E_PAPIER);
-      taskEXIT_CRITICAL();
       osMutexRelease(E_PAPIERMutexHandle);
       osEventFlagsSet(C3V1FlagsHandle, E_PAPIER_DISPLAY_FLAG);
       osDelay(1);
@@ -595,6 +641,275 @@ void StartMenuTask(void *argument)
    /* USER CODE END StartMenuTask */
 }
 
+/* USER CODE BEGIN Header_StartSaveMemoryTask */
+/**
+ * @brief Function implementing the SaveMemoryTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartSaveMemoryTask */
+void StartSaveMemoryTask(void *argument)
+{
+   /* USER CODE BEGIN StartSaveMemoryTask */
+   osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
+   osEventFlagsWait(C3V1FlagsHandle, NEW_DAY_TO_SAVE, osFlagsWaitAny, osWaitForever);
+   PageVariable_TypeDef Pv             = { 0 };
+   MV_TypeDef _Mv                      = { 0 };
+   uint32_t Cnt                        = 0;
+   RTC_TimeTypeDef RtcTime             = { 0 };
+   RTC_DateTypeDef RtcDate             = { 0 };
+   PageVariable_TypeDef ConfirmPv      = { 0 };
+   FramDateChart_TypeDef FramDateChart = { 0 };
+   uint8_t FramDataChartExistFlag      = 0;
+   osMutexAcquire(SPI1MutexHandle, osWaitForever);
+   uint32_t PageCnt          = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+   uint32_t FramDateChartCnt = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+   osMutexRelease(SPI1MutexHandle);
+   HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
+   HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+   if(FramDateChartCnt == 0)
+   {
+      FramDateChart.Date           = RtcDate.Date;
+      FramDateChart.Month          = RtcDate.Month;
+      FramDateChart.Year           = RtcDate.Year;
+      FramDateChart.StartFlashPage = PageCnt;
+      FramDateChart.Length         = 0;
+      FramDateChart.Crc            = CRC_INITIAL_VALUE;
+      osMutexAcquire(SPI1MutexHandle, osWaitForever);
+      fram_Write(&Fram, DATE_CHART_ADDR_START, &FramDateChart, sizeof(FramDateChart_TypeDef));
+      fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
+      osMutexRelease(SPI1MutexHandle);
+   }
+   else
+   {
+      for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
+      {
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
+         osMutexRelease(SPI1MutexHandle);
+         if(FramDateChart.Date == RtcDate.Date && FramDateChart.Month == RtcDate.Month && FramDateChart.Year == RtcDate.Year)
+         {
+            FramDataChartExistFlag = 1;
+            break;
+         }
+      }
+      if(FramDataChartExistFlag == 0)
+      {
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
+         FramDateChart.Date           = RtcDate.Date;
+         FramDateChart.Month          = RtcDate.Month;
+         FramDateChart.Year           = RtcDate.Year;
+         FramDateChart.StartFlashPage = PageCnt;
+         FramDateChart.Length         = 0;
+         FramDateChart.Crc            = CRC_INITIAL_VALUE;
+         FramDateChartCnt             = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+         fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+         osMutexRelease(SPI1MutexHandle);
+      }
+   }
+   /* Infinite loop */
+   for(;;)
+   {
+      osMessageQueueGet(DataToSaveQueueHandle, &_Mv, 0, osWaitForever);
+      HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      if(osEventFlagsWait(C3V1FlagsHandle, NEW_DAY_TO_SAVE, osFlagsWaitAny, 1) != osFlagsErrorTimeout)
+      {
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+         flash_WritePage(&Flash, PageCnt, &Pv, 256);
+         flash_ReadDataBytes(&Flash, PageCnt, &ConfirmPv, 256);
+         if(Pv.PageCRC == ConfirmPv.PageCRC)
+         {
+            fram_Increment32(&Fram, LAST_PAGE_NUMBER_ADDR);
+            PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+            FramDateChart.Length++;
+            FramDateChart.Crc = Crc(FramDateChart.Crc, 256, &Pv);
+            FramDateChartCnt  = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+            fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            Memory_ClearBuffer(&ConfirmPv);
+            Memory_ClearBuffer(&Pv);
+         }
+         fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
+         FramDateChart.Date           = RtcDate.Date;
+         FramDateChart.Month          = RtcDate.Month;
+         FramDateChart.Year           = RtcDate.Year;
+         FramDateChart.StartFlashPage = PageCnt;
+         FramDateChart.Length         = 0;
+         FramDateChart.Crc            = CRC_INITIAL_VALUE;
+         FramDateChartCnt             = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+         fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+         Cnt = 0;
+         osMutexRelease(SPI1MutexHandle);
+      }
+      Pv.Record[Cnt].ExternalHumidity    = _Mv.ExtHumidity;
+      Pv.Record[Cnt].ExternalPM1         = _Mv.ExtPM1;
+      Pv.Record[Cnt].ExternalPM10        = _Mv.ExtPM10;
+      Pv.Record[Cnt].ExternalPM25        = _Mv.ExtPM25;
+      Pv.Record[Cnt].ExternalTemperature = _Mv.ExtTemperature;
+      Pv.Record[Cnt].Hour                = RtcTime.Hours;
+      Pv.Record[Cnt].InternalPM1         = _Mv.InternalPM1;
+      Pv.Record[Cnt].InternalPM10        = _Mv.InternalPM10;
+      Pv.Record[Cnt].InternalPM25        = _Mv.InternalPM25;
+      Pv.Record[Cnt].Minute              = RtcTime.Minutes;
+      Pv.Record[Cnt].Pressure            = _Mv.Pressure;
+      Pv.Record[Cnt].Reserved            = Cnt;
+      Pv.Record[Cnt].Second              = RtcTime.Seconds;
+      Cnt++;
+      if(Cnt == 9)
+      {
+         Cnt        = 0;
+         Pv.PageCRC = Crc(CRC_INITIAL_VALUE, 252, &Pv);
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+         flash_WritePage(&Flash, PageCnt, &Pv, 256);
+         flash_ReadDataBytes(&Flash, PageCnt, &ConfirmPv, 256);
+         if(Pv.PageCRC == ConfirmPv.PageCRC)
+         {
+            fram_Increment32(&Fram, LAST_PAGE_NUMBER_ADDR);
+            PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+            FramDateChart.Length++;
+            FramDateChart.Crc = Crc(FramDateChart.Crc, 256, &Pv);
+            FramDateChartCnt  = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+            fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            Memory_ClearBuffer(&ConfirmPv);
+            Memory_ClearBuffer(&Pv);
+         }
+         osMutexRelease(SPI1MutexHandle);
+      }
+      osDelay(1);
+   }
+   /* USER CODE END StartSaveMemoryTask */
+}
+
+/* USER CODE BEGIN Header_StartChartTask */
+/**
+ * @brief Function implementing the ChartTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartChartTask */
+void StartChartTask(void *argument)
+{
+   /* USER CODE BEGIN StartChartTask */
+   osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
+   float FloatingPointType[400];
+   uint16_t IntegerType[400];
+   ChartDateAndType_TypeDef Cda        = { 0 };
+   uint8_t FramDataChartExistFlag      = 0;
+   FramDateChart_TypeDef FramDateChart = { 0 };
+   PageVariable_TypeDef Pv             = { 0 };
+   /* Infinite loop */
+   for(;;)
+   {
+      osMessageQueueGet(ChartQueueHandle, &Cda, 0, osWaitForever);
+      if(Cda.ChartType == PRESSURE || Cda.ChartType == EXTERNAL_TEMPERATURE || Cda.ChartType == EXTERNAL_HUMIDITY)
+      {
+         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
+         {
+            osMutexAcquire(SPI1MutexHandle, osWaitForever);
+            fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            osMutexRelease(SPI1MutexHandle);
+            if(FramDateChart.Date == Cda.Date && FramDateChart.Month == Cda.Month && FramDateChart.Year == Cda.Year)
+            {
+               FramDataChartExistFlag = 1;
+               break;
+            }
+         }
+         if(FramDataChartExistFlag == 1)
+         {
+            FramDataChartExistFlag = 0;
+            for(int i = 0; i < FramDateChart.Length; i++)
+            {
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               flash_ReadDataBytes(&Flash, i + FramDateChart.StartFlashPage, &Pv, 256);
+               osMutexRelease(SPI1MutexHandle);
+               uint32_t TempCrc = Crc(CRC_INITIAL_VALUE, 252, &Pv);
+               if(TempCrc == Pv.PageCRC)
+               {
+                  for(int j = (i * 9), k = 0; k < 9; k++)
+                  {
+                     if(Cda.ChartType == PRESSURE)
+                     {
+                        FloatingPointType[j + k] = Pv.Record[k].Pressure;
+                     }
+                     else if(Cda.ChartType == EXTERNAL_TEMPERATURE)
+                     {
+                        FloatingPointType[j + k] = Pv.Record[k].ExternalTemperature;
+                     }
+                     else
+                     {
+                        FloatingPointType[j + k] = Pv.Record[k].ExternalHumidity;
+                     }
+                  }
+               }
+            }
+         }
+
+         // TODO wyswietlanie i obrabianie danych
+      }
+      else
+      {
+         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
+         {
+            osMutexAcquire(SPI1MutexHandle, osWaitForever);
+            fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            osMutexRelease(SPI1MutexHandle);
+            if(FramDateChart.Date == Cda.Date && FramDateChart.Month == Cda.Month && FramDateChart.Year == Cda.Year)
+            {
+               FramDataChartExistFlag = 1;
+               break;
+            }
+         }
+         if(FramDataChartExistFlag == 1)
+         {
+            FramDataChartExistFlag = 0;
+            for(int i = 0; i < FramDateChart.Length; i++)
+            {
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               flash_ReadDataBytes(&Flash, i + FramDateChart.StartFlashPage, &Pv, 256);
+               osMutexRelease(SPI1MutexHandle);
+               uint32_t TempCrc = Crc(CRC_INITIAL_VALUE, 252, &Pv);
+               if(TempCrc == Pv.PageCRC)
+               {
+                  for(int j = (i * 9), k = 0; k < 9; k++)
+                  {
+                     if(Cda.ChartType == INTERNAL_PM1)
+                     {
+                        IntegerType[j + k] = Pv.Record[k].InternalPM1;
+                     }
+                     else if(Cda.ChartType == INTERNAL_PM25)
+                     {
+                        IntegerType[j + k] = Pv.Record[k].InternalPM25;
+                     }
+                     else if(Cda.ChartType == INTERNAL_PM10)
+                     {
+                        IntegerType[j + k] = Pv.Record[k].InternalPM10;
+                     }
+                     else if(Cda.ChartType == EXTERNAL_PM1)
+                     {
+                        IntegerType[j + k] = Pv.Record[k].ExternalPM1;
+                     }
+                     else if(Cda.ChartType == EXTERNAL_PM25)
+                     {
+                        IntegerType[j + k] = Pv.Record[k].ExternalPM25;
+                     }
+                     else
+                     {
+                        IntegerType[j + k] = Pv.Record[k].ExternalPM10;
+                     }
+                  }
+               }
+            }
+         }
+         // TODO Parsowanie i wyswietlanie
+      }
+      osDelay(1);
+   }
+   /* USER CODE END StartChartTask */
+}
+
 /* MenuTimerCallback function */
 void MenuTimerCallback(void *argument)
 {
@@ -605,6 +920,27 @@ void MenuTimerCallback(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+static void Memory_ClearBuffer(PageVariable_TypeDef *Pv)
+{
+   for(int i = 0; i < 9; i++)
+   {
+      Pv->Record[i].ExternalHumidity    = 0;
+      Pv->Record[i].ExternalPM1         = 0;
+      Pv->Record[i].ExternalPM10        = 0;
+      Pv->Record[i].ExternalPM25        = 0;
+      Pv->Record[i].ExternalTemperature = 0;
+      Pv->Record[i].Hour                = 0;
+      Pv->Record[i].InternalPM1         = 0;
+      Pv->Record[i].InternalPM10        = 0;
+      Pv->Record[i].InternalPM25        = 0;
+      Pv->Record[i].Minute              = 0;
+      Pv->Record[i].Pressure            = 0;
+      Pv->Record[i].Reserved            = 0;
+      Pv->Record[i].Second              = 0;
+      Pv->Record[i].Reserved            = 0;
+   }
+   Pv->PageCRC = CRC_INITIAL_VALUE;
+}
 static void RFP_DataFunction(uint8_t *Data, uint32_t DataLength, uint32_t DataStart)
 {
    uint8_t *TempPtr;

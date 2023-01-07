@@ -7,7 +7,48 @@
 
 #ifndef INC_MEASURMENTVARIABLE_H_
 #define INC_MEASURMENTVARIABLE_H_
-
+typedef enum
+{
+   INTERNAL_PM1,
+   INTERNAL_PM25,
+   INTERNAL_PM10,
+   EXTERNAL_PM1,
+   EXTERNAL_PM25,
+   EXTERNAL_PM10,
+   PRESSURE,
+   EXTERNAL_TEMPERATURE,
+   EXTERNAL_HUMIDITY
+} ChartType_TypeDef;
+typedef struct
+{
+   uint8_t Reserved;
+   uint8_t Second;
+   uint8_t Minute;
+   uint8_t Hour;
+   uint16_t InternalPM1;
+   uint16_t InternalPM25;
+   uint16_t InternalPM10;
+   uint16_t ExternalPM1;
+   uint16_t ExternalPM25;
+   uint16_t ExternalPM10;
+   float Pressure;
+   float ExternalTemperature;
+   float ExternalHumidity;
+} MemoryVariable_TypeDef;
+typedef struct
+{
+   uint8_t Date;
+   uint8_t Month;
+   uint8_t Year;
+   uint32_t StartFlashPage;
+   uint8_t Length;
+   uint32_t Crc;
+} FramDateChart_TypeDef;
+typedef struct
+{
+   MemoryVariable_TypeDef Record[9];
+   uint32_t PageCRC;
+} PageVariable_TypeDef;
 typedef struct
 {
    float ExtTemperature;
@@ -26,5 +67,12 @@ typedef struct
    float BatteryVoltage;
    uint8_t BatteryState;
 } MV_TypeDef;
+typedef struct
+{
+   uint16_t Year;
+   uint8_t Month;
+   uint8_t Date;
+   ChartType_TypeDef ChartType;
+} ChartDateAndType_TypeDef;
 
 #endif /* INC_MEASURMENTVARIABLE_H_ */

@@ -118,7 +118,6 @@ int main(void)
   MX_TIM5_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
-  MX_SPI3_Init();
   MX_RTC_Init();
   MX_RNG_Init();
 
@@ -134,9 +133,9 @@ int main(void)
    e_papier_init(&hspi1);
    e_papier_display();
    ssd1306_display();
-   fram_Init(&fram1, &hspi3, FRAM_HOLD_GPIO_Port, FRAM_CS_GPIO_Port, FRAM_WP_GPIO_Port, FRAM_HOLD_Pin, FRAM_CS_Pin, FRAM_WP_Pin);
+   fram_Init(&fram1, &hspi1, FRAM_HOLD_GPIO_Port, FRAM_CS_GPIO_Port, FRAM_WP_GPIO_Port, FRAM_HOLD_Pin, FRAM_CS_Pin, FRAM_WP_Pin);
    RFP_Init(&rfp, RFP_IDWS);
-   flash_Init(&flash1, &hspi3, FLASH_CS_GPIO_Port, FLASH_CS_Pin);
+   flash_Init(&flash1, &hspi1, FLASH_CS_GPIO_Port, FLASH_CS_Pin);
    RFP_RegisterDataFunction(RFP_DataFunction);
    RFP_RegisterMessageFunction(RFP_EXIT_DEEP_SLEEP, RFP_MessageExitDeepSleep);
    uint8_t data = RFP_START_MEASURMENT;
@@ -224,7 +223,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST) != HAL_OK)
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -245,7 +244,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 60;
+  RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -259,11 +258,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV4;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }

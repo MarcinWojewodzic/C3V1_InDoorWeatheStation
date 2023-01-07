@@ -12,4 +12,5 @@
 #define E_PAPIER_DRAWING_FLAG        0x00000004
 #define E_PAPIER_DISPLAY_FLAG        0x00000008
 #define MOON_PHASE_FLAG              0x00000010
+#define NEW_DAY_TO_SAVE              0x00000020
 #endif /* FLAGSDEFINITION_H_ */
