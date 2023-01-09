@@ -13,6 +13,7 @@
 ../Core/Src/flash_spi.c:88:6:flash_SetWELBit_and_WaitForEndProcess	16	static
 ../Core/Src/flash_spi.c:96:6:flash_ReadDataBytes	32	static
 ../Core/Src/flash_spi.c:112:6:flash_WritePage	32	static
-../Core/Src/flash_spi.c:127:6:flash_ClearSector	24	static
-../Core/Src/flash_spi.c:142:6:flash_ChipErase	24	static
-../Core/Src/flash_spi.c:152:6:flash_Init	24	static
+../Core/Src/flash_spi.c:128:6:flash_ReadPage	32	static
+../Core/Src/flash_spi.c:145:6:flash_ClearSector	24	static
+../Core/Src/flash_spi.c:160:6:flash_ChipErase	24	static
+../Core/Src/flash_spi.c:170:6:flash_Init	24	static

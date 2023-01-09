@@ -6,8 +6,10 @@
  */
 #include "main.h"
 
+#include "cmsis_os.h"
 #include "fram.h"
 #include "gpio.h"
+#include "iwdg.h"
 #include "spi.h"
 void fram_CsLow(fram_t *fram)
 {
@@ -23,6 +25,8 @@ void fram_SetWELBit(fram_t *fram)
    fram_CsLow(fram);
    HAL_SPI_Transmit(fram->fram_spi, &com, 1, 1000);
    fram_CsHigh(fram);
+   HAL_IWDG_Refresh(&hiwdg);
+   osDelay(100);
 }
 void fram_SetProtectedBlocs(fram_t *fram, uint8_t blocs)
 {
@@ -52,6 +56,14 @@ void fram_Write32(fram_t *fram, uint32_t Address, uint32_t Data)
    Temp[2] = ((Data >> 8) & 0xff);
    Temp[3] = ((Data >> 0) & 0xff);
    fram_Write(fram, Address, Temp, 4);
+}
+void fram_ChipErase(fram_t *fram)
+{
+   uint8_t Temp = 0;
+   for(int i = 0; i < 8 * 1024; i++)
+   {
+      fram_Write(fram, i, &Temp, 1);
+   }
 }
 FramStatus_TypeDef fram_Increment32(fram_t *fram, uint32_t Address)
 {
@@ -84,8 +96,8 @@ void fram_Write(fram_t *fram, uint16_t addr, uint8_t *buff, uint16_t length)
    fram_SetWELBit(fram);
    uint8_t data[3];
    data[0] = WRITE;
-   data[1] = (addr & 0xf0) >> 8;
-   data[2] = addr & 0x0f;
+   data[1] = (addr & 0xff) >> 8;
+   data[2] = addr & 0xff;
    fram_CsLow(fram);
    HAL_SPI_Transmit(fram->fram_spi, data, 3, 1000);
    HAL_SPI_Transmit(fram->fram_spi, buff, length, 1000);
@@ -96,8 +108,8 @@ void fram_Read(fram_t *fram, uint16_t addr, uint8_t *buff, uint16_t length)
    fram_SetWELBit(fram);
    uint8_t data[3];
    data[0] = READ;
-   data[1] = (addr & 0xf0) >> 8;
-   data[2] = addr & 0x0f;
+   data[1] = (addr & 0xff) >> 8;
+   data[2] = addr & 0xff;
    fram_CsLow(fram);
    HAL_SPI_Transmit(fram->fram_spi, data, 3, 1000);
    HAL_SPI_Receive(fram->fram_spi, buff, length, 1000);

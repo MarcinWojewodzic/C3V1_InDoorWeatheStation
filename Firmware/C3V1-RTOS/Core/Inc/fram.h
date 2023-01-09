@@ -33,4 +33,5 @@ void fram_Read(fram_t *fram, uint16_t addr, uint8_t *buff, uint16_t length);
 uint32_t fram_Read32(fram_t *fram, uint32_t Address);
 void fram_Write32(fram_t *fram, uint32_t Address, uint32_t Data);
 FramStatus_TypeDef fram_Increment32(fram_t *fram, uint32_t Address);
+void fram_ChipErase(fram_t *fram);
 #endif /* INC_FRAM_H_ */

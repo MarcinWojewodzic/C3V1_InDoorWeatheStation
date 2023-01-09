@@ -109,19 +109,37 @@ void flash_ReadDataBytes(flash_t *flash, uint32_t addr, uint8_t *data, uint16_t 
    flash_WaitForEndProcess(flash);
    flash_WaitForEndProcess(flash);
 }
-void flash_WritePage(flash_t *flash, uint32_t page_addr, uint8_t *data, uint16_t size)
+void flash_WritePage(flash_t *flash, uint32_t page_addr, uint8_t *data)
 {
    uint8_t dataToSend[4];
    flash_WaitForEndProcess(flash);
    flash_SetWELBit_and_WaitForEndProcess(flash);
+   page_addr *= PAGE_SIZE;
    dataToSend[0] = PAGE_PROGRAM;
    dataToSend[1] = (page_addr >> 16) & 0xff;
    dataToSend[2] = (page_addr >> 8) & 0xff;
    dataToSend[3] = page_addr & 0xff;
    flash_CsLow(flash);
    flash_WriteCommand(flash, dataToSend, 4);
-   flash_WriteData(flash, data, size);
+   flash_WriteData(flash, data, PAGE_SIZE);
    flash_CsHigh(flash);
+   flash_WaitForEndProcess(flash);
+}
+void flash_ReadPage(flash_t *flash, uint32_t page_addr, uint8_t *data)
+{
+   uint8_t dataToSend[4];
+   page_addr *= PAGE_SIZE;
+   flash_WaitForEndProcess(flash);
+   flash_SetWELBit_and_WaitForEndProcess(flash);
+   dataToSend[0] = READ_DATA;
+   dataToSend[1] = (page_addr >> 16) & 0xff;
+   dataToSend[2] = (page_addr >> 8) & 0xff;
+   dataToSend[3] = page_addr & 0xff;
+   flash_CsLow(flash);
+   flash_WriteCommand(flash, dataToSend, 4);
+   flash_ReadData(flash, data, PAGE_SIZE);
+   flash_CsHigh(flash);
+   flash_WaitForEndProcess(flash);
    flash_WaitForEndProcess(flash);
 }
 void flash_ClearSector(flash_t *flash, uint16_t addr)

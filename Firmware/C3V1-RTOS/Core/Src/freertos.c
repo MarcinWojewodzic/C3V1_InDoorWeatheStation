@@ -76,7 +76,7 @@
 RFP_TypeDef Rfp = { 0 };
 BME280_t Bme    = { 0 };
 flash_t Flash   = { 0 };
-fram_t Fram;
+fram_t Fram     = { 0 };
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -96,7 +96,7 @@ const osThreadAttr_t InitAndTimeTask_attributes = {
 osThreadId_t RfpTaskHandle;
 const osThreadAttr_t RfpTask_attributes = {
    .name       = "RfpTask",
-   .stack_size = 1024 * 4,
+   .stack_size = 2048 * 4,
    .priority   = (osPriority_t)osPriorityHigh,
 };
 /* Definitions for MeasurmentTask */
@@ -138,7 +138,7 @@ const osThreadAttr_t E_PapierDisplayTask_attributes = {
 osThreadId_t MenuTaskHandle;
 const osThreadAttr_t MenuTask_attributes = {
    .name       = "MenuTask",
-   .stack_size = 1024 * 4,
+   .stack_size = 2048 * 4,
    .priority   = (osPriority_t)osPriorityLow,
 };
 /* Definitions for SaveMemoryTask */
@@ -152,7 +152,7 @@ const osThreadAttr_t SaveMemoryTask_attributes = {
 osThreadId_t ChartTaskHandle;
 const osThreadAttr_t ChartTask_attributes = {
    .name       = "ChartTask",
-   .stack_size = 4048 * 4,
+   .stack_size = 8096 * 4,
    .priority   = (osPriority_t)osPriorityLow,
 };
 /* Definitions for MeasurmentQueue */
@@ -188,6 +188,12 @@ const osMutexAttr_t BME280Mutex_attributes = { .name = "BME280Mutex" };
 /* Definitions for MenuMutex */
 osMutexId_t MenuMutexHandle;
 const osMutexAttr_t MenuMutex_attributes = { .name = "MenuMutex" };
+/* Definitions for RTCMutex */
+osMutexId_t RTCMutexHandle;
+const osMutexAttr_t RTCMutex_attributes = { .name = "RTCMutex" };
+/* Definitions for EncoderMutex */
+osMutexId_t EncoderMutexHandle;
+const osMutexAttr_t EncoderMutex_attributes = { .name = "EncoderMutex" };
 /* Definitions for C3V1Flags */
 osEventFlagsId_t C3V1FlagsHandle;
 const osEventFlagsAttr_t C3V1Flags_attributes = { .name = "C3V1Flags" };
@@ -198,6 +204,8 @@ static void RFP_DataFunction(uint8_t *Data, uint32_t DataLength, uint32_t DataSt
 static double faza(double Rok, double Miesiac, double Dzien, double godzina, double min, double sec);
 static double rang(double x);
 static void Memory_ClearBuffer(PageVariable_TypeDef *Pv);
+static float mapf(float val, float in_min, float in_max, float out_min, float out_max);
+static uint32_t map(uint32_t val, uint32_t in_min, uint32_t in_max, uint32_t out_min, uint32_t out_max);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -244,6 +252,12 @@ void MX_FREERTOS_Init(void)
    /* creation of MenuMutex */
    MenuMutexHandle = osMutexNew(&MenuMutex_attributes);
 
+   /* creation of RTCMutex */
+   RTCMutexHandle = osMutexNew(&RTCMutex_attributes);
+
+   /* creation of EncoderMutex */
+   EncoderMutexHandle = osMutexNew(&EncoderMutex_attributes);
+
    /* USER CODE BEGIN RTOS_MUTEX */
    /* add mutexes, ... */
    /* USER CODE END RTOS_MUTEX */
@@ -268,7 +282,7 @@ void MX_FREERTOS_Init(void)
    MoonPhaseQueueHandle = osMessageQueueNew(16, sizeof(double), &MoonPhaseQueue_attributes);
 
    /* creation of ChartQueue */
-   ChartQueueHandle = osMessageQueueNew(16, sizeof(ChartType_TypeDef), &ChartQueue_attributes);
+   ChartQueueHandle = osMessageQueueNew(16, sizeof(ChartDateAndType_TypeDef), &ChartQueue_attributes);
 
    /* creation of DataToSaveQueue */
    DataToSaveQueueHandle = osMessageQueueNew(16, sizeof(MV_TypeDef), &DataToSaveQueue_attributes);
@@ -363,7 +377,9 @@ void StartInitAndTimeTask(void *argument)
    MENU_Init();
    fram_Init(&Fram, &hspi1, FRAM_HOLD_GPIO_Port, FRAM_CS_GPIO_Port, FRAM_WP_GPIO_Port, FRAM_HOLD_Pin, FRAM_CS_Pin, FRAM_WP_Pin);
    flash_Init(&Flash, &hspi1, FLASH_CS_GPIO_Port, FLASH_CS_Pin);
-   // fram_Write32(&Fram, DATE_CHART_CNT_ADDR, 0);
+   //   fram_ChipErase(&Fram);
+   //   HAL_IWDG_Refresh(&hiwdg);
+   //   flash_ChipErase(&Flash);
    taskEXIT_CRITICAL();
    osEventFlagsSet(C3V1FlagsHandle, INITIALIZE_ALL_FLAG);
    uint32_t Random;
@@ -381,8 +397,10 @@ void StartInitAndTimeTask(void *argument)
       osMutexAcquire(SPI1MutexHandle, osWaitForever);
       HAL_RNG_GenerateRandomNumber(&hrng, &Random);
       ssd1306_clear();
+      osMutexAcquire(RTCMutexHandle, osWaitForever);
       HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      osMutexRelease(RTCMutexHandle);
       sprintf(data, "%d h %d m %d s", RtcTime.Hours, RtcTime.Minutes, RtcTime.Seconds);
       GFX_DrawString(0, 0, data, WHITE, 0, OLED);
       sprintf(data, "%d : %d ; 20%d", RtcDate.Date, RtcDate.Month, RtcDate.Year);
@@ -500,8 +518,10 @@ void StartMoonPhaseTask(void *argument)
       RTC_DateTypeDef RtcDate;
       double PhaseMoon = 0.0;
       uint32_t Cnt     = 0;
+      osMutexAcquire(RTCMutexHandle, osWaitForever);
       HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      osMutexRelease(RTCMutexHandle);
       for(int Hours = 0; Hours < 24; Hours++)
       {
          for(int Minutes = 0; Minutes < 60; Minutes++)
@@ -542,6 +562,7 @@ void StartE_PapierDrawingTask(void *argument)
       osEventFlagsWait(C3V1FlagsHandle, E_PAPIER_DRAWING_FLAG, osFlagsWaitAny, osWaitForever);
       osMessageQueueGet(MeasurmentQueueHandle, &_Mv, 0, osWaitForever);
       osMutexAcquire(E_PAPIERMutexHandle, osWaitForever);
+      e_papier_clear();
       char mes[100];
       sprintf(mes, "H %0.2f", _Mv.ExtHumidity);
       GFX_DrawString(0, 0, mes, BLACK, 1, E_PAPIER);
@@ -571,8 +592,10 @@ void StartE_PapierDrawingTask(void *argument)
       {
          GFX_DrawString(0, 70, "Battery No Standby", BLACK, 1, E_PAPIER);
       }
+      osMutexAcquire(RTCMutexHandle, osWaitForever);
       HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      osMutexRelease(RTCMutexHandle);
       sprintf(mes, "%d h %d m %d s", RtcTime.Hours, RtcTime.Minutes, RtcTime.Seconds);
       GFX_DrawString(0, 80, mes, BLACK, 1, E_PAPIER);
       sprintf(mes, "%d : %d ; 20%d", RtcDate.Date, RtcDate.Month, RtcDate.Year);
@@ -635,7 +658,9 @@ void StartMenuTask(void *argument)
    /* Infinite loop */
    for(;;)
    {
+      osMutexAcquire(EncoderMutexHandle, osWaitForever);
       MENU_Handler();
+      osMutexRelease(EncoderMutexHandle);
       osDelay(10);
    }
    /* USER CODE END StartMenuTask */
@@ -665,61 +690,54 @@ void StartSaveMemoryTask(void *argument)
    uint32_t PageCnt          = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
    uint32_t FramDateChartCnt = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
    osMutexRelease(SPI1MutexHandle);
+   osMutexAcquire(RTCMutexHandle, osWaitForever);
    HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
    HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
-   if(FramDateChartCnt == 0)
+   osMutexRelease(RTCMutexHandle);
+
+   for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += 12)
    {
+      osMutexAcquire(SPI1MutexHandle, osWaitForever);
+      fram_Read(&Fram, i, &FramDateChart, 12);
+      osMutexRelease(SPI1MutexHandle);
+      if(FramDateChart.Date == RtcDate.Date && FramDateChart.Month == RtcDate.Month && FramDateChart.Year == RtcDate.Year)
+      {
+         FramDataChartExistFlag = 1;
+         // FramDateChart.Length   = 0;
+         // fram_Write(&Fram, DATE_CHART_ADDR_START + FramDateChartCnt * sizeof(FramDateChart_TypeDef), &FramDateChart,
+         // sizeof(FramDateChart_TypeDef));
+         break;
+      }
+   }
+   if(FramDataChartExistFlag == 0)
+   {
+      osMutexAcquire(SPI1MutexHandle, osWaitForever);
+      fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
       FramDateChart.Date           = RtcDate.Date;
       FramDateChart.Month          = RtcDate.Month;
       FramDateChart.Year           = RtcDate.Year;
       FramDateChart.StartFlashPage = PageCnt;
       FramDateChart.Length         = 0;
       FramDateChart.Crc            = CRC_INITIAL_VALUE;
-      osMutexAcquire(SPI1MutexHandle, osWaitForever);
-      fram_Write(&Fram, DATE_CHART_ADDR_START, &FramDateChart, sizeof(FramDateChart_TypeDef));
-      fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
+      FramDateChartCnt             = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
+      fram_Write(&Fram, DATE_CHART_ADDR_START + FramDateChartCnt * 12, &FramDateChart, 12);
       osMutexRelease(SPI1MutexHandle);
    }
-   else
-   {
-      for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
-      {
-         osMutexAcquire(SPI1MutexHandle, osWaitForever);
-         fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
-         osMutexRelease(SPI1MutexHandle);
-         if(FramDateChart.Date == RtcDate.Date && FramDateChart.Month == RtcDate.Month && FramDateChart.Year == RtcDate.Year)
-         {
-            FramDataChartExistFlag = 1;
-            break;
-         }
-      }
-      if(FramDataChartExistFlag == 0)
-      {
-         osMutexAcquire(SPI1MutexHandle, osWaitForever);
-         fram_Increment32(&Fram, DATE_CHART_CNT_ADDR);
-         FramDateChart.Date           = RtcDate.Date;
-         FramDateChart.Month          = RtcDate.Month;
-         FramDateChart.Year           = RtcDate.Year;
-         FramDateChart.StartFlashPage = PageCnt;
-         FramDateChart.Length         = 0;
-         FramDateChart.Crc            = CRC_INITIAL_VALUE;
-         FramDateChartCnt             = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
-         fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
-         osMutexRelease(SPI1MutexHandle);
-      }
-   }
+
    /* Infinite loop */
    for(;;)
    {
       osMessageQueueGet(DataToSaveQueueHandle, &_Mv, 0, osWaitForever);
+      osMutexAcquire(RTCMutexHandle, osWaitForever);
       HAL_RTC_GetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN);
       HAL_RTC_GetDate(&hrtc, &RtcDate, RTC_FORMAT_BIN);
+      osMutexRelease(RTCMutexHandle);
       if(osEventFlagsWait(C3V1FlagsHandle, NEW_DAY_TO_SAVE, osFlagsWaitAny, 1) != osFlagsErrorTimeout)
       {
          osMutexAcquire(SPI1MutexHandle, osWaitForever);
          PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
-         flash_WritePage(&Flash, PageCnt, &Pv, 256);
-         flash_ReadDataBytes(&Flash, PageCnt, &ConfirmPv, 256);
+         flash_WritePage(&Flash, PageCnt, &Pv);
+         flash_ReadPage(&Flash, PageCnt, &ConfirmPv);
          if(Pv.PageCRC == ConfirmPv.PageCRC)
          {
             fram_Increment32(&Fram, LAST_PAGE_NUMBER_ADDR);
@@ -727,7 +745,7 @@ void StartSaveMemoryTask(void *argument)
             FramDateChart.Length++;
             FramDateChart.Crc = Crc(FramDateChart.Crc, 256, &Pv);
             FramDateChartCnt  = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
-            fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            fram_Write(&Fram, DATE_CHART_ADDR_START + FramDateChartCnt * 12, &FramDateChart, 12);
             Memory_ClearBuffer(&ConfirmPv);
             Memory_ClearBuffer(&Pv);
          }
@@ -739,7 +757,7 @@ void StartSaveMemoryTask(void *argument)
          FramDateChart.Length         = 0;
          FramDateChart.Crc            = CRC_INITIAL_VALUE;
          FramDateChartCnt             = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
-         fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+         fram_Write(&Fram, DATE_CHART_ADDR_START + FramDateChartCnt * 12, &FramDateChart, 12);
          Cnt = 0;
          osMutexRelease(SPI1MutexHandle);
       }
@@ -763,8 +781,8 @@ void StartSaveMemoryTask(void *argument)
          Pv.PageCRC = Crc(CRC_INITIAL_VALUE, 252, &Pv);
          osMutexAcquire(SPI1MutexHandle, osWaitForever);
          PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
-         flash_WritePage(&Flash, PageCnt, &Pv, 256);
-         flash_ReadDataBytes(&Flash, PageCnt, &ConfirmPv, 256);
+         flash_WritePage(&Flash, PageCnt, &Pv);
+         flash_ReadPage(&Flash, PageCnt, &ConfirmPv);
          if(Pv.PageCRC == ConfirmPv.PageCRC)
          {
             fram_Increment32(&Fram, LAST_PAGE_NUMBER_ADDR);
@@ -772,7 +790,7 @@ void StartSaveMemoryTask(void *argument)
             FramDateChart.Length++;
             FramDateChart.Crc = Crc(FramDateChart.Crc, 256, &Pv);
             FramDateChartCnt  = fram_Read32(&Fram, DATE_CHART_CNT_ADDR);
-            fram_Write(&Fram, DATE_CHART_ADDR_START * FramDateChartCnt, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            fram_Write(&Fram, DATE_CHART_ADDR_START + FramDateChartCnt * 12, &FramDateChart, 12);
             Memory_ClearBuffer(&ConfirmPv);
             Memory_ClearBuffer(&Pv);
          }
@@ -794,22 +812,45 @@ void StartChartTask(void *argument)
 {
    /* USER CODE BEGIN StartChartTask */
    osEventFlagsWait(C3V1FlagsHandle, INITIALIZE_ALL_FLAG, osFlagsWaitAny | osFlagsNoClear, osWaitForever);
-   float FloatingPointType[400];
-   uint16_t IntegerType[400];
+   float FloatingPointType[400]        = { 0 };
+   uint16_t IntegerType[400]           = { 0 };
+   uint8_t Hour[400]                   = { 0 };
+   uint8_t Minute[400]                 = { 0 };
    ChartDateAndType_TypeDef Cda        = { 0 };
    uint8_t FramDataChartExistFlag      = 0;
    FramDateChart_TypeDef FramDateChart = { 0 };
    PageVariable_TypeDef Pv             = { 0 };
+   uint16_t Y_Axis[400]                = { 0 };
+   uint16_t X_Axis[400]                = { 0 };
    /* Infinite loop */
    for(;;)
    {
       osMessageQueueGet(ChartQueueHandle, &Cda, 0, osWaitForever);
+      osMutexAcquire(E_PAPIERMutexHandle, osWaitForever);
+      e_papier_clear();
+      GFX_DrawLine(63, 50, 63, 281, BLACK, E_PAPIER);
+      GFX_DrawLine(40, 281, 399, 281, BLACK, E_PAPIER);
+      GFX_DrawLine(40, 223, 399, 223, BLACK, E_PAPIER);
+      GFX_DrawLine(40, 165, 399, 165, BLACK, E_PAPIER);
+      GFX_DrawLine(40, 108, 399, 108, BLACK, E_PAPIER);
+      GFX_DrawLine(40, 50, 399, 50, BLACK, E_PAPIER);
+      for(int i = 1; i < 24; i++)
+      {
+         GFX_DrawLine(64 + i * 14, 281, 64 + i * 14, 270, BLACK, E_PAPIER);
+      }
+      for(int i = 1; i < 24; i++)
+      {
+         char Temp[3];
+         sprintf(Temp, "%d", i);
+         GFX_DrawString(64 + i * 14 - 5, 290, Temp, BLACK, 1, E_PAPIER);
+      }
+      osMutexRelease(E_PAPIERMutexHandle);
       if(Cda.ChartType == PRESSURE || Cda.ChartType == EXTERNAL_TEMPERATURE || Cda.ChartType == EXTERNAL_HUMIDITY)
       {
-         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
+         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += 12)
          {
             osMutexAcquire(SPI1MutexHandle, osWaitForever);
-            fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            fram_Read(&Fram, i, &FramDateChart, 12);
             osMutexRelease(SPI1MutexHandle);
             if(FramDateChart.Date == Cda.Date && FramDateChart.Month == Cda.Month && FramDateChart.Year == Cda.Year)
             {
@@ -823,7 +864,7 @@ void StartChartTask(void *argument)
             for(int i = 0; i < FramDateChart.Length; i++)
             {
                osMutexAcquire(SPI1MutexHandle, osWaitForever);
-               flash_ReadDataBytes(&Flash, i + FramDateChart.StartFlashPage, &Pv, 256);
+               flash_ReadPage(&Flash, i + FramDateChart.StartFlashPage, &Pv);
                osMutexRelease(SPI1MutexHandle);
                uint32_t TempCrc = Crc(CRC_INITIAL_VALUE, 252, &Pv);
                if(TempCrc == Pv.PageCRC)
@@ -842,19 +883,91 @@ void StartChartTask(void *argument)
                      {
                         FloatingPointType[j + k] = Pv.Record[k].ExternalHumidity;
                      }
+                     Minute[j + k] = Pv.Record[k].Minute;
+                     Hour[j + k]   = Pv.Record[k].Hour;
                   }
                }
             }
          }
-
-         // TODO wyswietlanie i obrabianie danych
+         float _Max = 0, _Min = 10000000.0;
+         for(int i = 0; i < FramDateChart.Length * 9; i++)
+         {
+            if(_Max < FloatingPointType[i])
+            {
+               _Max = FloatingPointType[i];
+            }
+            if(_Min > FloatingPointType[i] && FloatingPointType[i] != 0.0)
+            {
+               _Min = FloatingPointType[i];
+            }
+         }
+         for(int i = 0; i < 400; i++)
+         {
+            if(FloatingPointType[i] == 0)
+            {
+               FloatingPointType[i] = _Min;
+            }
+            Y_Axis[i] = (uint16_t)mapf(FloatingPointType[i], _Min, _Max, 20.0, 250.0);
+            Y_Axis[i] = 300 - Y_Axis[i];
+         }
+         for(int i = 0; i < 400; i++)
+         {
+            if(Hour[i] != 0 && Minute[i] != 0)
+            {
+               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
+            }
+            else if(X_Axis[i] == 0)
+            {
+               X_Axis[i] = 0xffff;
+            }
+         }
+         osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+         osMutexAcquire(E_PAPIERMutexHandle, osWaitForever);
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         if(X_Axis[0] != 0xffff && X_Axis[1] != 0xffff)
+         {
+            GFX_DrawLine(X_Axis[0], Y_Axis[0], X_Axis[1], Y_Axis[1], BLACK, E_PAPIER);
+         }
+         for(int i = 1; i < 399; i++)
+         {
+            if(X_Axis[i + 1] != 0xffff && X_Axis[i] != 0xffff)
+            {
+               GFX_DrawLine(X_Axis[i], Y_Axis[i], X_Axis[i + 1], Y_Axis[i + 1], BLACK, E_PAPIER);
+            }
+         }
+         char Temp[10];
+         float TempDifferencje = _Max - _Min;
+         sprintf(Temp, "%0.2f", (_Min + TempDifferencje / 4));
+         GFX_DrawString(0, 218, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%0.2f", (_Min + TempDifferencje / 2));
+         GFX_DrawString(0, 160, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%0.2f", (_Max - TempDifferencje / 4));
+         GFX_DrawString(0, 103, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%0.2f", _Min);
+         GFX_DrawString(0, 276, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%0.2f", _Max);
+         GFX_DrawString(0, 45, Temp, BLACK, 1, E_PAPIER);
+         e_papier_display();
+         osMutexAcquire(EncoderMutexHandle, osWaitForever);
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
+         {
+            osDelay(100);
+         }
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
+         {
+            osDelay(100);
+         }
+         osMutexRelease(EncoderMutexHandle);
+         osMutexRelease(SPI1MutexHandle);
+         osMutexRelease(E_PAPIERMutexHandle);
+         osMutexRelease(ScreensDcMutexHandle);
       }
       else
       {
-         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += sizeof(FramDateChart_TypeDef))
+         for(int i = DATE_CHART_ADDR_START; i < DATE_CHART_ADDR_END; i += 12)
          {
             osMutexAcquire(SPI1MutexHandle, osWaitForever);
-            fram_Read(&Fram, i, &FramDateChart, sizeof(FramDateChart_TypeDef));
+            fram_Read(&Fram, i, &FramDateChart, 12);
             osMutexRelease(SPI1MutexHandle);
             if(FramDateChart.Date == Cda.Date && FramDateChart.Month == Cda.Month && FramDateChart.Year == Cda.Year)
             {
@@ -868,7 +981,7 @@ void StartChartTask(void *argument)
             for(int i = 0; i < FramDateChart.Length; i++)
             {
                osMutexAcquire(SPI1MutexHandle, osWaitForever);
-               flash_ReadDataBytes(&Flash, i + FramDateChart.StartFlashPage, &Pv, 256);
+               flash_ReadPage(&Flash, i + FramDateChart.StartFlashPage, &Pv);
                osMutexRelease(SPI1MutexHandle);
                uint32_t TempCrc = Crc(CRC_INITIAL_VALUE, 252, &Pv);
                if(TempCrc == Pv.PageCRC)
@@ -899,12 +1012,95 @@ void StartChartTask(void *argument)
                      {
                         IntegerType[j + k] = Pv.Record[k].ExternalPM10;
                      }
+                     Minute[j + k] = Pv.Record[k].Minute;
+                     Hour[j + k]   = Pv.Record[k].Hour;
                   }
                }
             }
          }
-         // TODO Parsowanie i wyswietlanie
+         uint16_t _Max = 0, _Min = 10000000;
+         for(int i = 0; i < FramDateChart.Length * 9; i++)
+         {
+            if(_Max < IntegerType[i])
+            {
+               _Max = IntegerType[i];
+            }
+            if(_Min > IntegerType[i] && IntegerType[i] != 0.0)
+            {
+               _Min = IntegerType[i];
+            }
+         }
+         for(int i = 0; i < 400; i++)
+         {
+            if(IntegerType[i] == 0)
+            {
+               IntegerType[i] = _Min;
+            }
+            Y_Axis[i] = (uint16_t)map(IntegerType[i], _Min, _Max, 20, 250);
+            Y_Axis[i] = 300 - Y_Axis[i];
+         }
+         for(int i = 0; i < 400; i++)
+         {
+            if(Hour[i] != 0 && Minute[i] != 0)
+            {
+               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
+            }
+            else if(X_Axis[i] == 0)
+            {
+               X_Axis[i] = 0xffff;
+            }
+         }
+         osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+         osMutexAcquire(E_PAPIERMutexHandle, osWaitForever);
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         char Temp[10];
+         uint16_t TempDifferencje = _Max - _Min;
+         sprintf(Temp, "%d", (_Min + TempDifferencje / 4));
+         GFX_DrawString(0, 218, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%d", (_Min + TempDifferencje / 2));
+         GFX_DrawString(0, 160, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%d", (_Max - TempDifferencje / 4));
+         GFX_DrawString(0, 103, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%d", _Min);
+         GFX_DrawString(0, 276, Temp, BLACK, 1, E_PAPIER);
+         sprintf(Temp, "%d", _Max);
+         GFX_DrawString(0, 45, Temp, BLACK, 1, E_PAPIER);
+         if(X_Axis[0] != 0xffff && X_Axis[1] != 0xffff)
+         {
+            GFX_DrawLine(X_Axis[0], Y_Axis[0], X_Axis[1], Y_Axis[1], BLACK, E_PAPIER);
+         }
+         for(int i = 1; i < 399; i++)
+         {
+            if(X_Axis[i + 1] != 0xffff && X_Axis[i] != 0xffff)
+            {
+               GFX_DrawLine(X_Axis[i], Y_Axis[i], X_Axis[i + 1], Y_Axis[i + 1], BLACK, E_PAPIER);
+            }
+         }
+         e_papier_display();
+         osMutexAcquire(EncoderMutexHandle, osWaitForever);
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
+         {
+            osDelay(100);
+         }
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
+         {
+            osDelay(100);
+         }
+         osMutexRelease(EncoderMutexHandle);
+         osMutexRelease(SPI1MutexHandle);
+         osMutexRelease(E_PAPIERMutexHandle);
+         osMutexRelease(ScreensDcMutexHandle);
       }
+      for(int i = 0; i < 400; i++)
+      {
+         IntegerType[i]       = 0;
+         FloatingPointType[i] = 0;
+         Y_Axis[i]            = 0;
+         X_Axis[i]            = 0;
+         Hour[i]              = 0;
+         Minute[i]            = 0;
+      }
+      FramDataChartExistFlag = 0;
       osDelay(1);
    }
    /* USER CODE END StartChartTask */
@@ -1024,6 +1220,14 @@ static double faza(double Rok, double Miesiac, double Dzien, double godzina, dou
       phi1 = -1 * phi1;
    }
    return (100 * phi1);
+}
+static float mapf(float val, float in_min, float in_max, float out_min, float out_max)
+{
+   return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+static uint32_t map(uint32_t val, uint32_t in_min, uint32_t in_max, uint32_t out_min, uint32_t out_max)
+{
+   return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {

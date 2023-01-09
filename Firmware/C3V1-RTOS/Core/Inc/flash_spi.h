@@ -23,6 +23,7 @@
 #define READ_SR2         0x35
 #define BUSY_FLAG        0x01
 #define WEL_BIT          0x02
+#define PAGE_SIZE        256
 typedef struct
 {
    SPI_HandleTypeDef *flash_spi;
@@ -32,7 +33,8 @@ typedef struct
 } flash_t;
 void flash_Init(flash_t *flash, SPI_HandleTypeDef *spi, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 void flash_ReadDataBytes(flash_t *flash, uint32_t addr, uint8_t *data, uint16_t size);
-void flash_WritePage(flash_t *flash, uint32_t page_addr, uint8_t *data, uint16_t size);
+void flash_WritePage(flash_t *flash, uint32_t page_addr, uint8_t *data);
 void flash_ClearSector(flash_t *flash, uint16_t addr);
 void flash_ChipErase(flash_t *flash);
+void flash_ReadPage(flash_t *flash, uint32_t page_addr, uint8_t *data);
 #endif /* INC_FLASH_SPI_H_ */
