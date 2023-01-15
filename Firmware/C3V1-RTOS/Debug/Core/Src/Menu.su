@@ -1,7 +1,7 @@
-../Core/Src/Menu.c:40:13:MENU_ChangeState	16	static
-../Core/Src/Menu.c:53:6:MENU_Init	8	static
-../Core/Src/Menu.c:57:6:MENU_Handler	8	static
-../Core/Src/Menu.c:65:13:MENU_IdleFunction	8	static
-../Core/Src/Menu.c:77:13:MENU_ChoiseFunction	120	static
-../Core/Src/Menu.c:170:13:MENU_RunningFunction	200	static
-../Core/Src/Menu.c:820:13:MENU_EndFunction	8	static
+../Core/Src/Menu.c:47:13:MENU_ChangeState	16	static
+../Core/Src/Menu.c:60:6:MENU_Init	8	static
+../Core/Src/Menu.c:64:6:MENU_Handler	8	static
+../Core/Src/Menu.c:72:13:MENU_IdleFunction	8	static
+../Core/Src/Menu.c:84:13:MENU_ChoiseFunction	120	static
+../Core/Src/Menu.c:194:13:MENU_RunningFunction	208	static
+../Core/Src/Menu.c:908:13:MENU_EndFunction	8	static

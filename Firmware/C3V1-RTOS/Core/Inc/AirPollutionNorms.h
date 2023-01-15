@@ -1,0 +1,17 @@
+/*
+ * AirPollutionNorms.h
+ *
+ *  Created on: Jan 15, 2023
+ *      Author: M
+ */
+
+#ifndef INC_AIRPOLLUTIONNORMS_H_
+#define INC_AIRPOLLUTIONNORMS_H_
+#define PM10_VERY_GOOD_TRESHOLD  20
+#define PM10_SUFFICIENT_TRESHOLD 110
+#define PM10_VERY_BAD_TRESHOLD   150
+
+#define PM25_VERY_GOOD_TRESHOLD 13
+#define PM25_SUFFICIENT_TRESHOLD 55
+#define PM25_VERY_BAD_TRESHOLD   110
+#endif /* INC_AIRPOLLUTIONNORMS_H_ */

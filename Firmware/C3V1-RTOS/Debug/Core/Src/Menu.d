@@ -49,8 +49,9 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../Core/Inc/e_papier.h ../Core/Inc/printf.h ../Core/Inc/rtc.h \
- ../Core/Inc/ssd1306_spi.h ../Core/Inc/tim.h
+ ../Core/Inc/e_papier.h ../Core/Inc/flash_spi.h ../Core/Inc/fram.h \
+ ../Core/Inc/iwdg.h ../Core/Inc/printf.h ../Core/Inc/rtc.h \
+ ../Core/Inc/ssd1306_spi.h ../Core/Inc/tim.h ../Core/Inc/PMS.h
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -106,7 +107,11 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/e_papier.h:
+../Core/Inc/flash_spi.h:
+../Core/Inc/fram.h:
+../Core/Inc/iwdg.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/rtc.h:
 ../Core/Inc/ssd1306_spi.h:
 ../Core/Inc/tim.h:
+../Core/Inc/PMS.h:

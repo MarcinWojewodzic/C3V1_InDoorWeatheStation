@@ -12,11 +12,15 @@
 #include "Menu.h"
 #include "cmsis_os.h"
 #include "e_papier.h"
+#include "flash_spi.h"
+#include "fram.h"
+#include "iwdg.h"
 #include "printf.h"
 #include "rtc.h"
 #include "ssd1306_spi.h"
 #include "stdio.h"
 #include "tim.h"
+#include "PMS.h"
 extern osEventFlagsId_t C3V1FlagsHandle;
 extern osMutexId_t MenuMutexHandle;
 extern osMutexId_t ScreensDcMutexHandle;
@@ -24,6 +28,9 @@ extern osMutexId_t SSD1306MutexHandle;
 extern osMutexId_t SPI1MutexHandle;
 extern osMutexId_t RTCMutexHandle;
 extern osMessageQueueId_t ChartQueueHandle;
+extern osMessageQueueId_t RfpMessageQueueHandle;
+extern fram_t Fram;
+extern flash_t Flash;
 static void MENU_ChangeState(void);
 
 static void MENU_IdleFunction(void);
@@ -149,6 +156,23 @@ static void MENU_ChoiseFunction(void)
          osMutexRelease(SPI1MutexHandle);
          osMutexRelease(SSD1306MutexHandle);
          osMutexRelease(ScreensDcMutexHandle);
+         break;
+      }
+      case MENU_CHOISE_SEND_MESURMENT_COMMAND:
+      {
+         osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+         osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         ssd1306_clear();
+         sprintf(Temp, "WYSLIJ ZADANIE");
+         GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
+         sprintf(Temp, "POMIARU");
+         GFX_DrawString(0, 10, Temp, WHITE, 0, OLED);
+         ssd1306_display();
+         osMutexRelease(SPI1MutexHandle);
+         osMutexRelease(SSD1306MutexHandle);
+         osMutexRelease(ScreensDcMutexHandle);
+         break;
       }
       default:
       {
@@ -263,6 +287,9 @@ static void MENU_RunningFunction(void)
                   Menu.ButtonCnt = 0;
                   Menu.f         = 1;
                   osMutexAcquire(RTCMutexHandle, osWaitForever);
+                  RtcTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+                  RtcTime.StoreOperation = RTC_STOREOPERATION_RESET;
+                  RtcTime.TimeFormat=RTC_FORMAT_BIN;
                   while(HAL_RTC_SetTime(&hrtc, &RtcTime, RTC_FORMAT_BIN) != HAL_OK)
                   {
                      osDelay(100);
@@ -747,7 +774,12 @@ static void MENU_RunningFunction(void)
             sprintf(Temp, "CZYSZCZENIE!!!");
             GFX_DrawString(0, 0, Temp, BLACK, 1, OLED);
             ssd1306_display();
-            osDelay(10000);
+            taskENTER_CRITICAL();
+            fram_ChipErase(&Fram);
+            HAL_IWDG_Refresh(&hiwdg);
+            flash_ChipErase(&Flash);
+            taskEXIT_CRITICAL();
+            HAL_NVIC_SystemReset();
             osMutexRelease(SPI1MutexHandle);
             osMutexRelease(SSD1306MutexHandle);
             osMutexRelease(ScreensDcMutexHandle);
@@ -805,6 +837,62 @@ static void MENU_RunningFunction(void)
          else
          {
             osEventFlagsClear(C3V1FlagsHandle, E_PAPIER_DARK_MODE);
+         }
+         break;
+      }
+      case MENU_CHOISE_SEND_MESURMENT_COMMAND:
+      {
+         TIM5->CNT                     = 0;
+         RfpMessage_TypeDef RfpMessage = { 0 };
+         uint8_t Command               = RFP_START_MEASURMENT;
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
+         {
+            if((TIM5->CNT / 4) % 2 == 0)
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "NIE");
+               GFX_DrawFillRectangle(5, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(10, 30, Temp, BLACK, 1, OLED);
+               sprintf(Temp, "TAK");
+               GFX_DrawString(100, 30, Temp, WHITE, 0, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            else
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "NIE");
+               GFX_DrawString(10, 30, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "TAK");
+               GFX_DrawFillRectangle(95, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(100, 30, Temp, BLACK, 1, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            osDelay(100);
+         }
+
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
+         {
+            osDelay(100);
+         }
+         if((TIM5->CNT / 4) % 2 == 1)
+         {
+            RfpMessage.AdditionalData = 0;
+            RfpMessage.Data           = Command;
+            RfpMessage.MessageType    = RFP_COMMAND;
+            PMS_ExitSleepMode();
+            osMessageQueuePut(RfpMessageQueueHandle, &RfpMessage, 0, osWaitForever);
          }
          break;
       }

@@ -7,6 +7,7 @@
 "./Core/Src/GFX_Lepsze.o"
 "./Core/Src/HC12.o"
 "./Core/Src/Menu.o"
+"./Core/Src/PMS.o"
 "./Core/Src/WS2812b.o"
 "./Core/Src/bme280_spi.o"
 "./Core/Src/crc.o"

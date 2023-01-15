@@ -75,8 +75,12 @@ void Error_Handler(void);
 #define BME280_CS_GPIO_Port GPIOB
 #define ENCODER_SWITCH_Pin GPIO_PIN_14
 #define ENCODER_SWITCH_GPIO_Port GPIOB
+#define PMS3003_SET_Pin GPIO_PIN_15
+#define PMS3003_SET_GPIO_Port GPIOB
 #define HC12_SET_Pin GPIO_PIN_11
 #define HC12_SET_GPIO_Port GPIOA
+#define PMS3003_RST_Pin GPIO_PIN_12
+#define PMS3003_RST_GPIO_Port GPIOA
 #define SIGNAL_Pin GPIO_PIN_15
 #define SIGNAL_GPIO_Port GPIOA
 #define FRAM_CS_Pin GPIO_PIN_6

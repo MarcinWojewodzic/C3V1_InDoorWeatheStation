@@ -1,0 +1,4 @@
+../Core/Src/PMS.c:11:6:PMS_Reset	8	static
+../Core/Src/PMS.c:18:6:PMS_ReceiveToIdle	16	static
+../Core/Src/PMS.c:23:6:PMS_EnterSleepMode	8	static
+../Core/Src/PMS.c:27:6:PMS_ExitSleepMode	8	static

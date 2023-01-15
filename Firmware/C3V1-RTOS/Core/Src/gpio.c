@@ -50,11 +50,11 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SSD1306_CS_GPIO_Port, SSD1306_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, SSD1306_CS_Pin|PMS3003_RST_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, SCREENS_DC_Pin|EPAPIER_CS_Pin|EPAPIER_RST_Pin|SSD1306_RST_Pin
-                          |FRAM_CS_Pin|FRAM_WP_Pin|FLASH_CS_Pin, GPIO_PIN_SET);
+                          |PMS3003_SET_Pin|FRAM_CS_Pin|FRAM_WP_Pin|FLASH_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, HEARTBEAT_Pin|BME280_CS_Pin|FRAM_HOLD_Pin, GPIO_PIN_RESET);
@@ -62,17 +62,19 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, HC12_SET_Pin|SIGNAL_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PAPin PAPin */
-  GPIO_InitStruct.Pin = SSD1306_CS_Pin|SIGNAL_Pin;
+  /*Configure GPIO pins : PAPin PAPin PAPin */
+  GPIO_InitStruct.Pin = SSD1306_CS_Pin|PMS3003_RST_Pin|SIGNAL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PBPin PBPin PBPin PBPin
-                           PBPin PBPin PBPin PBPin */
+                           PBPin PBPin PBPin PBPin
+                           PBPin */
   GPIO_InitStruct.Pin = SCREENS_DC_Pin|EPAPIER_CS_Pin|EPAPIER_RST_Pin|SSD1306_RST_Pin
-                          |HEARTBEAT_Pin|FRAM_CS_Pin|FRAM_WP_Pin|FLASH_CS_Pin;
+                          |HEARTBEAT_Pin|PMS3003_SET_Pin|FRAM_CS_Pin|FRAM_WP_Pin
+                          |FLASH_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
