@@ -28,6 +28,7 @@ typedef enum
    MENU_CHOISE_DATE,
    MENU_CHOISE_CHART,
    MENU_CHOISE_CLEAR_EXTERNAL_MEMORY,
+   MENU_CHOISE_DARK_MODE,
    MENU_CHOISE_CNT
 } MenuChoise_TypeDef;
 typedef struct

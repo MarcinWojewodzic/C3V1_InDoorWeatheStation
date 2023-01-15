@@ -1,4 +1,4 @@
-../Core/Src/GFX_BW.c:23:13:GFX_DrawPixelScreen	24	static
+../Core/Src/GFX_BW.c:23:6:GFX_DrawPixelScreen	24	static
 ../Core/Src/GFX_BW.c:34:6:GFX_SetFont	16	static
 ../Core/Src/GFX_BW.c:39:6:GFX_SetFontSize	16	static
 ../Core/Src/GFX_BW.c:45:9:GFX_GetFontHeight	4	static

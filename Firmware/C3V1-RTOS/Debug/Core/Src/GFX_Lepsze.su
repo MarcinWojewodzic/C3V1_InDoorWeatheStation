@@ -1,0 +1,8 @@
+../Core/Src/GFX_Lepsze.c:17:6:EF_SetFont	16	static
+../Core/Src/GFX_Lepsze.c:22:9:EF_GetFontHeight	4	static
+../Core/Src/GFX_Lepsze.c:27:9:EF_GetFontStartChar	4	static
+../Core/Src/GFX_Lepsze.c:32:9:EF_GetFontEndChar	4	static
+../Core/Src/GFX_Lepsze.c:37:9:EF_GetFontSpaceWidth	4	static
+../Core/Src/GFX_Lepsze.c:42:6:EF_DecodePolish	16	static
+../Core/Src/GFX_Lepsze.c:120:9:EF_PutChar	56	static
+../Core/Src/GFX_Lepsze.c:201:9:EF_PutString	64	static

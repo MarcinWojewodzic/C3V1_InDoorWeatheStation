@@ -75,6 +75,7 @@ uint8_t GFX_GetFontWidth(void);
 uint8_t GFX_GetFontSize(void);
 void GFX_DrawChar(int x, int y, char chr, uint8_t color, uint8_t background, Screen_TypeDef Screen);
 void GFX_DrawString(int x, int y, char *str, uint8_t color, uint8_t background, Screen_TypeDef Screen);
+void GFX_DrawPixelScreen(uint16_t x, uint16_t y, uint8_t color, Screen_TypeDef Screen);
 #endif
 
 #if USING_LINES == 1

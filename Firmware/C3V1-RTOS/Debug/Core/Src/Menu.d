@@ -27,8 +27,6 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_iwdg.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
- ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng.h \
- ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi.h \
@@ -37,7 +35,9 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
- ../Core/Inc/GFX_BW.h ../Core/Inc/MeasurmentVariable.h ../Core/Inc/Menu.h \
+ ../Core/Inc/FlagsDefinition.h ../Core/Inc/GFX_BW.h \
+ ../Core/Inc/MeasurmentVariable.h ../Core/Inc/rfp.h ../Core/Inc/main.h \
+ ../Core/Inc/Menu.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  ../Core/Inc/FreeRTOSConfig.h \
@@ -50,7 +50,7 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  ../Core/Inc/e_papier.h ../Core/Inc/printf.h ../Core/Inc/rtc.h \
- ../Core/Inc/main.h ../Core/Inc/ssd1306_spi.h ../Core/Inc/tim.h
+ ../Core/Inc/ssd1306_spi.h ../Core/Inc/tim.h
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -80,8 +80,6 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_iwdg.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
-../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng.h:
-../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi.h:
@@ -90,8 +88,11 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
+../Core/Inc/FlagsDefinition.h:
 ../Core/Inc/GFX_BW.h:
 ../Core/Inc/MeasurmentVariable.h:
+../Core/Inc/rfp.h:
+../Core/Inc/main.h:
 ../Core/Inc/Menu.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
@@ -107,6 +108,5 @@ Core/Src/Menu.o: ../Core/Src/Menu.c ../Core/Inc/main.h \
 ../Core/Inc/e_papier.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/rtc.h:
-../Core/Inc/main.h:
 ../Core/Inc/ssd1306_spi.h:
 ../Core/Inc/tim.h:

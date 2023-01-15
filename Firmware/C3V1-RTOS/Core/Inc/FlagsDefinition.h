@@ -13,4 +13,6 @@
 #define E_PAPIER_DISPLAY_FLAG        0x00000008
 #define MOON_PHASE_FLAG              0x00000010
 #define NEW_DAY_TO_SAVE              0x00000020
+#define E_PAPIER_DARK_MODE           0x00000040
+#define NEW_DAY_FLAG                 0x00000080
 #endif /* FLAGSDEFINITION_H_ */

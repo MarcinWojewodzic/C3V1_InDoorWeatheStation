@@ -6,6 +6,7 @@
  */
 #include "main.h"
 
+#include "FlagsDefinition.h"
 #include "GFX_BW.h"
 #include "MeasurmentVariable.h"
 #include "Menu.h"
@@ -16,6 +17,7 @@
 #include "ssd1306_spi.h"
 #include "stdio.h"
 #include "tim.h"
+extern osEventFlagsId_t C3V1FlagsHandle;
 extern osMutexId_t MenuMutexHandle;
 extern osMutexId_t ScreensDcMutexHandle;
 extern osMutexId_t SSD1306MutexHandle;
@@ -134,6 +136,19 @@ static void MENU_ChoiseFunction(void)
          osMutexRelease(SSD1306MutexHandle);
          osMutexRelease(ScreensDcMutexHandle);
          break;
+      }
+      case MENU_CHOISE_DARK_MODE:
+      {
+         osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+         osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+         osMutexAcquire(SPI1MutexHandle, osWaitForever);
+         ssd1306_clear();
+         sprintf(Temp, "ON/OFF Tryb ciemny");
+         GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
+         ssd1306_display();
+         osMutexRelease(SPI1MutexHandle);
+         osMutexRelease(SSD1306MutexHandle);
+         osMutexRelease(ScreensDcMutexHandle);
       }
       default:
       {
@@ -455,6 +470,7 @@ static void MENU_RunningFunction(void)
                   QueueChartData.Year  = RtcDate.Year;
                }
             }
+            osDelay(50);
          }
 
          osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
@@ -613,33 +629,18 @@ static void MENU_RunningFunction(void)
                   osMutexRelease(SSD1306MutexHandle);
                   osMutexRelease(ScreensDcMutexHandle);
                   QueueChartData.ChartType = EXTERNAL_HUMIDITY;
-                  break;
                }
             }
          }
          osDelay(50);
-         osMessageQueuePut(ChartQueueHandle, &QueueChartData, 0, osWaitForever);
          while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
          {
             osDelay(100);
          }
-         break;
-      }
-      case MENU_CHOISE_CLEAR_EXTERNAL_MEMORY:
-      {
-         osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
-         osMutexAcquire(SSD1306MutexHandle, osWaitForever);
-         osMutexAcquire(SPI1MutexHandle, osWaitForever);
-         ssd1306_clear();
-         sprintf(Temp, "WYMAGA POTWIERDZENIA");
-         GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
-         ssd1306_display();
-         osMutexRelease(SPI1MutexHandle);
-         osMutexRelease(SSD1306MutexHandle);
-         osMutexRelease(ScreensDcMutexHandle);
+         TIM5->CNT = 0;
          while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
          {
-            if((TIM5->CNT / 4) % 9 == 0)
+            if((TIM5->CNT / 4) % 2 == 0)
             {
                osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
                osMutexAcquire(SSD1306MutexHandle, osWaitForever);
@@ -647,10 +648,10 @@ static void MENU_RunningFunction(void)
                ssd1306_clear();
                sprintf(Temp, "WYMAGA POTWIERDZENIA");
                GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
-               sprintf(Temp, "TAK");
+               sprintf(Temp, "NIE");
                GFX_DrawFillRectangle(5, 25, 25, 18, WHITE, OLED);
                GFX_DrawString(10, 30, Temp, BLACK, 1, OLED);
-               sprintf(Temp, "NIE");
+               sprintf(Temp, "TAK");
                GFX_DrawString(100, 30, Temp, WHITE, 0, OLED);
                ssd1306_display();
                osMutexRelease(SPI1MutexHandle);
@@ -665,9 +666,9 @@ static void MENU_RunningFunction(void)
                ssd1306_clear();
                sprintf(Temp, "WYMAGA POTWIERDZENIA");
                GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
-               sprintf(Temp, "TAK");
-               GFX_DrawString(10, 30, Temp, WHITE, 0, OLED);
                sprintf(Temp, "NIE");
+               GFX_DrawString(10, 30, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "TAK");
                GFX_DrawFillRectangle(95, 25, 25, 18, WHITE, OLED);
                GFX_DrawString(100, 30, Temp, BLACK, 1, OLED);
                ssd1306_display();
@@ -677,12 +678,67 @@ static void MENU_RunningFunction(void)
             }
             osDelay(100);
          }
-      }
+
          while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
          {
             osDelay(100);
          }
-         if((TIM5->CNT / 4) % 9 == 0)
+         if((TIM5->CNT / 4) % 2 == 1)
+         {
+            osMessageQueuePut(ChartQueueHandle, &QueueChartData, 0, osWaitForever);
+         }
+         break;
+      }
+
+      case MENU_CHOISE_CLEAR_EXTERNAL_MEMORY:
+      {
+         TIM5->CNT = 0;
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
+         {
+            if((TIM5->CNT / 4) % 2 == 0)
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "WYMAGA POTWIERDZENIA");
+               GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "NIE");
+               GFX_DrawFillRectangle(5, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(10, 30, Temp, BLACK, 1, OLED);
+               sprintf(Temp, "TAK");
+               GFX_DrawString(100, 30, Temp, WHITE, 0, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            else
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "WYMAGA POTWIERDZENIA");
+               GFX_DrawString(0, 0, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "NIE");
+               GFX_DrawString(10, 30, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "TAK");
+               GFX_DrawFillRectangle(95, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(100, 30, Temp, BLACK, 1, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            osDelay(100);
+         }
+
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
+         {
+            osDelay(100);
+         }
+         if((TIM5->CNT / 4) % 2 == 1)
          {
             osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
             osMutexAcquire(SSD1306MutexHandle, osWaitForever);
@@ -696,11 +752,68 @@ static void MENU_RunningFunction(void)
             osMutexRelease(SSD1306MutexHandle);
             osMutexRelease(ScreensDcMutexHandle);
          }
+         break;
+      }
+      case MENU_CHOISE_DARK_MODE:
+      {
+         TIM5->CNT = 0;
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 1)
+         {
+            if((TIM5->CNT / 4) % 2 == 0)
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "OFF");
+               GFX_DrawFillRectangle(5, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(10, 30, Temp, BLACK, 1, OLED);
+               sprintf(Temp, "ON");
+               GFX_DrawString(100, 30, Temp, WHITE, 0, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            else
+            {
+               osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
+               osMutexAcquire(SSD1306MutexHandle, osWaitForever);
+               osMutexAcquire(SPI1MutexHandle, osWaitForever);
+               ssd1306_clear();
+               sprintf(Temp, "OFF");
+               GFX_DrawString(10, 30, Temp, WHITE, 0, OLED);
+               sprintf(Temp, "ON");
+               GFX_DrawFillRectangle(95, 25, 25, 18, WHITE, OLED);
+               GFX_DrawString(100, 30, Temp, BLACK, 1, OLED);
+               ssd1306_display();
+               osMutexRelease(SPI1MutexHandle);
+               osMutexRelease(SSD1306MutexHandle);
+               osMutexRelease(ScreensDcMutexHandle);
+            }
+            osDelay(100);
+         }
+
+         while(HAL_GPIO_ReadPin(ENCODER_SWITCH_GPIO_Port, ENCODER_SWITCH_Pin) == 0)
+         {
+            osDelay(100);
+         }
+         if((TIM5->CNT / 4) % 2 == 1)
+         {
+            osEventFlagsSet(C3V1FlagsHandle, E_PAPIER_DARK_MODE);
+         }
+         else
+         {
+            osEventFlagsClear(C3V1FlagsHandle, E_PAPIER_DARK_MODE);
+         }
+         break;
+      }
       default:
       {
          break;
       }
    }
+
    Menu.NewEvent = MENU_EVENT_END;
 }
 

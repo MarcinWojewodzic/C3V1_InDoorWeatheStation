@@ -13,7 +13,10 @@
 #include "string.h"
 
 #include "cmsis_os.h"
+
+#include "FlagsDefinition.h"
 SPI_HandleTypeDef *e_papier_spi;
+extern osEventFlagsId_t C3V1FlagsHandle;
 static uint8_t BufferEpapier[EPD_WIDTH * EPD_HEIGHT / 8];
 
 const unsigned char lut_vcom0[] = {
@@ -41,11 +44,11 @@ const unsigned char lut_bb[] = {
 void e_papier_reset(void)
 {
    HAL_GPIO_WritePin(EPAPIER_RST_GPIO_Port, EPAPIER_RST_Pin, 1);
-   HAL_Delay(200);
+   osDelay(200);
    HAL_GPIO_WritePin(EPAPIER_RST_GPIO_Port, EPAPIER_RST_Pin, 0);
-   HAL_Delay(200);
+   osDelay(200);
    HAL_GPIO_WritePin(EPAPIER_RST_GPIO_Port, EPAPIER_RST_Pin, 1);
-   HAL_Delay(200);
+   osDelay(200);
 }
 void e_papier_send_command(uint8_t command)
 {
@@ -150,7 +153,13 @@ void e_papier_display(void)
    uint16_t Width, Height;
    Width  = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
    Height = EPD_HEIGHT;
-   taskENTER_CRITICAL();
+   if(osEventFlagsWait(C3V1FlagsHandle, E_PAPIER_DARK_MODE, osFlagsWaitAny | osFlagsNoClear, 1) != osFlagsErrorTimeout)
+   {
+      for(int i = 0; i < sizeof(BufferEpapier); i++)
+      {
+         BufferEpapier[i] = ~BufferEpapier[i];
+      }
+   }
    e_papier_send_command(DATA_START_TRANSMISSION_1);
    for(uint16_t j = 0; j < Height; j++)
    {
@@ -167,7 +176,6 @@ void e_papier_display(void)
          e_papier_send_data(BufferEpapier[i + j * Width]);
       }
    }
-   taskEXIT_CRITICAL();
    e_papier_turn_on_display();
    e_papier_wait_until_idle();
 }
@@ -215,5 +223,4 @@ void e_papier_init(SPI_HandleTypeDef *spi)
 
    e_papier_set_lut();
    e_papier_clear();
-   e_papier_display();
 }

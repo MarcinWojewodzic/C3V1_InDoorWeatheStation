@@ -20,7 +20,7 @@
 #if USING_STRINGS == 1
 const uint8_t *font;
 uint8_t size = 1;
-static void GFX_DrawPixelScreen(uint16_t x, uint16_t y, uint8_t color, Screen_TypeDef Screen)
+void GFX_DrawPixelScreen(uint16_t x, uint16_t y, uint8_t color, Screen_TypeDef Screen)
 {
    if(Screen == OLED)
    {

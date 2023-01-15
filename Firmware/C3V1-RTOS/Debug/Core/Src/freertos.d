@@ -6,10 +6,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
- ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  ../Core/Inc/main.h ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h \
  ../Core/Inc/stm32l4xx_hal_conf.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rcc.h \
@@ -38,8 +36,6 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_iwdg.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
- ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng.h \
- ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi.h \
@@ -48,15 +44,21 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
+ ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
+ ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  ../Core/Inc/printf.h ../Core/Inc/GFX_BW.h ../Core/Inc/e_papier.h \
  ../Core/Inc/flash_spi.h ../Core/Inc/fonts/fonts.h \
  ../Core/Inc/fonts/font_8x5.h ../Core/Inc/fram.h ../Core/Inc/rfp.h \
  ../Core/Inc/main.h ../Core/Inc/ssd1306_spi.h ../Core/Inc/dma.h \
- ../Core/Inc/gpio.h ../Core/Inc/iwdg.h ../Core/Inc/rng.h \
- ../Core/Inc/rtc.h ../Core/Inc/spi.h ../Core/Inc/tim.h \
- ../Core/Inc/usart.h ../Core/Inc/bme280_spi.h \
- ../Core/Inc/FlagsDefinition.h ../Core/Inc/FramOrganization.h \
- ../Core/Inc/MeasurmentVariable.h ../Core/Inc/Menu.h ../Core/Inc/crc.h
+ ../Core/Inc/gpio.h ../Core/Inc/iwdg.h ../Core/Inc/rtc.h \
+ ../Core/Inc/spi.h ../Core/Inc/tim.h ../Core/Inc/usart.h \
+ ../Core/Inc/bme280_spi.h ../Core/Inc/FlagsDefinition.h \
+ ../Core/Inc/FramOrganization.h ../Core/Inc/GFX_Lepsze.h \
+ ../Core/Inc/GFX_BW.h ../Core/Inc/MeasurmentVariable.h ../Core/Inc/rfp.h \
+ ../Core/Inc/Menu.h ../Core/Inc/WS2812b.h ../Core/Inc/crc.h \
+ ../Core/Inc/fonts/Tnr10ppt.h ../Core/Inc/fonts/Tnr12ppt.h \
+ ../Core/Inc/fonts/Tnr16ppt.h ../Core/Inc/fonts/Tnr22ppt.h \
+ ../Core/Inc/fonts/Tnr28ppt.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -64,10 +66,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h:
-../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h:
-../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -97,8 +97,6 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_iwdg.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
-../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng.h:
-../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rng_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rtc_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi.h:
@@ -107,6 +105,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
+../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h:
+../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/GFX_BW.h:
 ../Core/Inc/e_papier.h:
@@ -120,7 +120,6 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Core/Inc/dma.h:
 ../Core/Inc/gpio.h:
 ../Core/Inc/iwdg.h:
-../Core/Inc/rng.h:
 ../Core/Inc/rtc.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/tim.h:
@@ -128,6 +127,15 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Core/Inc/bme280_spi.h:
 ../Core/Inc/FlagsDefinition.h:
 ../Core/Inc/FramOrganization.h:
+../Core/Inc/GFX_Lepsze.h:
+../Core/Inc/GFX_BW.h:
 ../Core/Inc/MeasurmentVariable.h:
+../Core/Inc/rfp.h:
 ../Core/Inc/Menu.h:
+../Core/Inc/WS2812b.h:
 ../Core/Inc/crc.h:
+../Core/Inc/fonts/Tnr10ppt.h:
+../Core/Inc/fonts/Tnr12ppt.h:
+../Core/Inc/fonts/Tnr16ppt.h:
+../Core/Inc/fonts/Tnr22ppt.h:
+../Core/Inc/fonts/Tnr28ppt.h:

@@ -7,6 +7,7 @@
 #include "ssd1306_spi.h"
 #include "main.h"
 #include "string.h"
+#include "cmsis_os.h"
 SPI_HandleTypeDef *ssd1306_spi;
 static uint8_t buffer[(SSD1306_LCDWIDTH * SSD1306_LCDHEIGHT) / 8];
 static void ssd1306_command(uint8_t command)
@@ -59,9 +60,9 @@ void ssd1306_clear()
 void ssd1306_init(SPI_HandleTypeDef *spi)
 {
    HAL_GPIO_WritePin(ssd1306_res_GPIO_Port, ssd1306_res_Pin, GPIO_PIN_RESET);
-   HAL_Delay(150);
+   osDelay(150);
    HAL_GPIO_WritePin(ssd1306_res_GPIO_Port, ssd1306_res_Pin, GPIO_PIN_SET);
-   HAL_Delay(100);
+   osDelay(100);
    ssd1306_spi = spi;
    ssd1306_command(0xAE); // Display Off
 

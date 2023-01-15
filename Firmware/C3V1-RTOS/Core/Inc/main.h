@@ -77,6 +77,8 @@ void Error_Handler(void);
 #define ENCODER_SWITCH_GPIO_Port GPIOB
 #define HC12_SET_Pin GPIO_PIN_11
 #define HC12_SET_GPIO_Port GPIOA
+#define SIGNAL_Pin GPIO_PIN_15
+#define SIGNAL_GPIO_Port GPIOA
 #define FRAM_CS_Pin GPIO_PIN_6
 #define FRAM_CS_GPIO_Port GPIOB
 #define FRAM_WP_Pin GPIO_PIN_7

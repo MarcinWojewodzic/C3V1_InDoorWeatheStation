@@ -1,5 +1,5 @@
-../Core/Src/ssd1306_spi.c:12:13:ssd1306_command	16	static
-../Core/Src/ssd1306_spi.c:26:6:ssd1306_set_pixel	16	static
-../Core/Src/ssd1306_spi.c:45:6:ssd1306_display	8	static
-../Core/Src/ssd1306_spi.c:55:6:ssd1306_clear	8	static
-../Core/Src/ssd1306_spi.c:59:6:ssd1306_init	16	static
+../Core/Src/ssd1306_spi.c:13:13:ssd1306_command	16	static
+../Core/Src/ssd1306_spi.c:27:6:ssd1306_set_pixel	16	static
+../Core/Src/ssd1306_spi.c:46:6:ssd1306_display	8	static
+../Core/Src/ssd1306_spi.c:56:6:ssd1306_clear	8	static
+../Core/Src/ssd1306_spi.c:60:6:ssd1306_init	16	static

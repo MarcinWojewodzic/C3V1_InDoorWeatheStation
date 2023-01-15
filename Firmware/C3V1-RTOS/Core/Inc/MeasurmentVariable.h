@@ -7,6 +7,7 @@
 
 #ifndef INC_MEASURMENTVARIABLE_H_
 #define INC_MEASURMENTVARIABLE_H_
+#include "rfp.h"
 typedef enum
 {
    INTERNAL_PM1,
@@ -74,5 +75,21 @@ typedef struct
    uint8_t Date;
    ChartType_TypeDef ChartType;
 } ChartDateAndType_TypeDef;
-
+typedef struct
+{
+   RFPMessageType_TypeDef MessageType;
+   uint8_t Data;
+   uint16_t AdditionalData;
+} RfpMessage_TypeDef;
+typedef union
+{
+   uint16_t IntegerType[800];
+   float FloatingPointType[800];
+} ChartTypeVariable_TypeDef;
+typedef struct
+{
+   double Sunrise;
+   double Sunset;
+   double Sunup;
+} Sunrise_TypeDef;
 #endif /* INC_MEASURMENTVARIABLE_H_ */
