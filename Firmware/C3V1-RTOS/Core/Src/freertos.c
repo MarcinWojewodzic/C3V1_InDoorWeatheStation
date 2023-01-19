@@ -466,8 +466,8 @@ void StartInitAndTimeTask(void *argument)
    EF_PutString((uint8_t *)"SPRAWDŹ ZIELONĄ DIDE!", 0, 80, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"JEŻELI MIGA TO WSZYSTKO DOBRZE", 0, 100, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"JEŻELI NIE TO NALEŻY WCISĄĆ RESET", 0, 120, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
-   EF_PutString((uint8_t *)"FIRMWARE VERSION: 3.2", 0, 260, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
-   EF_PutString((uint8_t *)"HARDWARE VERSION: 1.2", 0, 280, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
+   EF_PutString((uint8_t *)"FIRMWARE VERSION: 11.2", 0, 260, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
+   EF_PutString((uint8_t *)"HARDWARE VERSION: 2.1", 0, 280, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"AUTOR: MARCIN WOJEWODZIC", 0, 220, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"PROMOTOR: Dr Inż. MARCIN RODZIEWICZ", 0, 240, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    e_papier_display();
@@ -1228,13 +1228,13 @@ void StartChartTask(void *argument)
          }
          for(int i = 0; i < 800; i++)
          {
-            if(Hour[i] != 0 && Minute[i] != 0)
-            {
-               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
-            }
-            else if(X_Axis[i] == 0)
+            if(Hour[i] == 0 && Minute[i] == 0 && X_Axis[i] == 0)
             {
                X_Axis[i] = 0xffff;
+            }
+            else
+            {
+               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
             }
          }
          osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
@@ -1366,13 +1366,13 @@ void StartChartTask(void *argument)
          }
          for(int i = 0; i < 800; i++)
          {
-            if(Hour[i] != 0 && Minute[i] != 0)
-            {
-               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
-            }
-            else if(X_Axis[i] == 0)
+            if(Hour[i] == 0 && Minute[i] == 0 && X_Axis[i] == 0)
             {
                X_Axis[i] = 0xffff;
+            }
+            else
+            {
+               X_Axis[i] = map(Hour[i] * 60 + Minute[i], Hour[i] * 60, (Hour[i] + 1) * 60, 64 + (Hour[i] * 14), 64 + ((Hour[i] + 1) * 14));
             }
          }
          osMutexAcquire(ScreensDcMutexHandle, osWaitForever);
