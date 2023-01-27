@@ -462,8 +462,8 @@ void StartInitAndTimeTask(void *argument)
    EF_SetFont(&timesNewRoman_12ptFontInfo);
    EF_PutString((uint8_t *)"WITAJ W PROJEKCIE INŻYNIERSKIM", 0, 0, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"NA TEN MOMENT TRWA INICJALIZACJA", 0, 20, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
-   EF_PutString((uint8_t *)"ZA OKOŁO 2 MINUTY POJAWIĄ SIĘ WINIKI", 0, 40, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
-   EF_PutString((uint8_t *)"SPRAWDŹ ZIELONĄ DIDE!", 0, 80, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
+   EF_PutString((uint8_t *)"ZA OKOŁO 2 MINUTY POJAWIĄ SIĘ WYNIKI", 0, 40, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
+   EF_PutString((uint8_t *)"SPRAWDŹ ZIELONĄ DIODE!", 0, 80, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"JEŻELI MIGA TO WSZYSTKO DOBRZE", 0, 100, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"JEŻELI NIE TO NALEŻY WCISĄĆ RESET", 0, 120, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
    EF_PutString((uint8_t *)"FIRMWARE VERSION: 11.2", 0, 260, BLACK, BG_TRANSPARENT, WHITE, E_PAPIER);
@@ -1041,7 +1041,8 @@ void StartSaveMemoryTask(void *argument)
       if(osEventFlagsWait(C3V1FlagsHandle, NEW_DAY_TO_SAVE, osFlagsWaitAny, 1) != osFlagsErrorTimeout)
       {
          osMutexAcquire(SPI1MutexHandle, osWaitForever);
-         PageCnt = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+         PageCnt    = fram_Read32(&Fram, LAST_PAGE_NUMBER_ADDR);
+         Pv.PageCRC = Crc(CRC_INITIAL_VALUE, 252, &Pv);
          flash_WritePage(&Flash, PageCnt, &Pv);
          flash_ReadPage(&Flash, PageCnt, &ConfirmPv);
          if(Pv.PageCRC == ConfirmPv.PageCRC)

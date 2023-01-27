@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ABS25-32.768KHZ-6-T
+D 32.768 kHz LOW FREQUENCY SMD CRYSTAL
+K
+F https://datasheet.datasheetarchive.com/originals/distributors/Datasheets-DGA13/1170823.pdf
+$ENDCMP
+#
+#End Doc Library

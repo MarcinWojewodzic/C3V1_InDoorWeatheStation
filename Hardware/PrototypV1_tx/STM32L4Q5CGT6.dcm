@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP STM32L4Q5CGT6
+D Ultra-low-power with FPU Arm Cortex-M4 MCU 120 MHz with 1024 kbytes of Flash memory, USB OTG, DFSDM, CHROM-ART, AES, PKA
+K
+F https://www.st.com/resource/en/datasheet/stm32l4q5ag.pdf
+$ENDCMP
+#
+#End Doc Library

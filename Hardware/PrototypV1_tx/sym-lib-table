@@ -1,3 +1,5 @@
 (sym_lib_table
   (lib (name PrototypV1_tx-rescue)(type Legacy)(uri ${KIPRJMOD}/PrototypV1_tx-rescue.lib)(options "")(descr ""))
+  (lib (name STM32L4Q5CGT6)(type Legacy)(uri ${KIPRJMOD}/STM32L4Q5CGT6.lib)(options "")(descr ""))
+  (lib (name ABS25-32.768KHZ-6-T)(type Legacy)(uri ${KIPRJMOD}/ABS25-32.768KHZ-6-T.lib)(options "")(descr ""))
 )
